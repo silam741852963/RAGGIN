@@ -5,6 +5,7 @@ from pymilvus import (
     DataType, FieldSchema, CollectionSchema
 )
 from config import DENSE_VECTOR_DIM
+import numpy as np
 
 class MilvusSchemaManager:
     def __init__(self, collection_name, uri):
@@ -190,21 +191,14 @@ class MilvusSchemaManager:
         
     def delete_version(self, version: str):
         """
-        Deletes all data for the specified version by dropping its partition.
-        This method first releases the partition (if loaded) and then drops it.
+        Deletes all documents in the collection that match the provided version using a delete expression.
         """
         self.connect_to_milvus()
         # Re-instantiate the collection
         self.collection = Collection(self.collection_name)
-        
-        # Attempt to release the partition (ignore errors if already released)
-        try:
-            self.collection.release_partitions(partition_names=[version])
-            logging.info("Released partition for version %s.", version)
-        except Exception as e:
-            logging.warning("Could not release partition %s: %s", version, e)
-        
-        # Drop the partition corresponding to the version
-        result = self.collection.drop_partition(partition_name=version)
-        logging.info("Dropped partition for version %s: %s", version, result)
+        self.collection.load()
+        expr = f"version == '{version}'"
+        result = self.collection.delete(expr)
+        logging.info("Deleted documents for version %s using expression '%s': %s", version, expr, result)
         return result
+

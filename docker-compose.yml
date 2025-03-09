@@ -77,7 +77,7 @@ services:
     environment:
       - DOWNLOADS_DIR=/downloads
       - SUPPORTED_VERSIONS_FILE=/config/supported_versions.txt
-      - MILVUS_URI=http://0.0.0.0:19530
+      - MILVUS_URI=http://standalone:19530
 
 networks:
   default:

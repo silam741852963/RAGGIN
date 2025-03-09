@@ -9,4 +9,4 @@ SUPPORTED_VERSIONS_FILE = os.getenv("SUPPORTED_VERSIONS_FILE", os.path.join(PROJ
 # Constant for the dense vector dimension.
 DENSE_VECTOR_DIM = 1024
 
-MILVUS_URI = os.getenv("MILVUS_URI", "http://0.0.0.0:19530")
+MILVUS_URI = os.getenv("MILVUS_URI", "http://standalone:19530")

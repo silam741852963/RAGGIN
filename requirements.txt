@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pymilvus
+pandas
+kagglehub
+numpy
+scipy
+torch

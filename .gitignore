@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.venv/
+env/
+venv/
+
+# Docker
+*.log
+docker-compose.override.yml
+volumes/
+
+# VSCode settings
+.vscode/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+downloads/*

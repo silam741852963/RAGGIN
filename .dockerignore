@@ -1,0 +1,11 @@
+# Ignore the virtual environment
+venv/
+app/venv/
+
+# Ignore local logs and cache files
+*.log
+__pycache__/
+*.pyc
+
+# Exclude downloads folder from being copied to the image
+downloads/

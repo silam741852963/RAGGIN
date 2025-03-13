@@ -18,12 +18,10 @@ def enhance_prompt(request: GeneratorRequest):
             raise HTTPException(status_code=404, detail=f"Version {request.versionName} is not supported.")
         # Implement logic to generate a response based on the query and versionName
         # Return the generated response
-        # hybrid_search_request = HybridSearchRequest(versionName=request.versionName, sparseWeight=0.5, denseTextWeight=0.5, denseCodeWeight=0.5, topK=5, filter="", iterativeFilter=False, radius=0.0, rangeFilter=0.0)
-        # retrieved_docs = hybrid_search(hybrid_search_request)
-        # prompt = f"Context: {retrieved_docs['results']}\n\nQuestion: {request.query}"
+        hybrid_search_request = HybridSearchRequest(versionName=request.versionName, sparseWeight=0.5, denseTextWeight=0.5, denseCodeWeight=0.5, topK=5, filter="", iterativeFilter=False, radius=0.0, rangeFilter=0.0)
+        retrieved_docs = hybrid_search(hybrid_search_request)
         # print(retrieved_docs)
-        # return {"prompt": retrieved_docs}
-        return {"prompt": request.query}
+        return {"prompt": {"context": retrieved_docs["results"], "question": request.query}}
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reading versions file: {e}")

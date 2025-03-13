@@ -1,12 +1,14 @@
 import logging
-from pymilvus import Collection
+from pymilvus import Collection, MilvusClient
 from scipy.sparse import csr_matrix
 import torch
-from config import DENSE_VECTOR_DIM
+from config import DENSE_VECTOR_DIM, MILVUS_URI
 
 class HybridSearchManager:
     def __init__(self, collection_name):
-        self.collection = Collection(collection_name)
+        # self.collection = Collection(collection_name)
+        self.client = MilvusClient(uri=MILVUS_URI)
+        self.collection_name = collection_name
         device = "cuda" if torch.cuda.is_available() else "cpu"
         # Replace dummy_embedding_function with your real embedding logic.
         self.embedding_function = self.dummy_embedding_function
@@ -14,40 +16,43 @@ class HybridSearchManager:
 
     def dummy_embedding_function(self, queries):
         return {
-            "sparse": [[(0, 0.5)]],  # Dummy sparse embedding
+            "sparse": [(0, 0.5)],  # Dummy sparse embedding
             "dense": [[0.1] * DENSE_VECTOR_DIM for _ in queries]
         }
 
     def sparse_search(self, query_vector, limit, filter_expr, radius, range_filter):
-        results = self.collection.search(
+        results = self.client.search(
+            collection_name=self.collection_name,
             data=[query_vector],
             anns_field="sparse_title",
-            param={"metric_type": "IP", "radius": radius, "range": range_filter},
+            search_params={"metric_type": "IP", "radius": radius, "range": range_filter},
             limit=limit,
             output_fields=["entry_id", "title", "metadata", "text_content", "code_content", "version", "tag"],
-            expr=filter_expr
+            # expr=filter_expr
         )
         return results
 
     def dense_text_search(self, query_dense_text_embedding, limit, filter_expr, radius, range_filter):
-        results = self.collection.search(
+        results = self.client.search(
+            collection_name=self.collection_name,
             data=[query_dense_text_embedding],
             anns_field="dense_text_content",
-            param={"metric_type": "COSINE", "params": {"nprobe": 10}, "radius": radius, "range": range_filter},
+            search_params={"metric_type": "COSINE", "params": {"nprobe": 10}, "radius": radius, "range": range_filter},
             limit=limit,
             output_fields=["entry_id", "title", "metadata", "text_content", "code_content", "version", "tag"],
-            expr=filter_expr
+            # expr=filter_expr
         )
         return results
 
     def code_search(self, query_dense_code_embedding, limit, filter_expr, radius, range_filter):
-        results = self.collection.search(
+        results = self.client.search(
+            collection_name=self.collection_name,
             data=[query_dense_code_embedding],
             anns_field="dense_code_snippet",
-            param={"metric_type": "COSINE", "params": {"nprobe": 10}, "radius": radius, "range": range_filter},
+            search_params={"metric_type": "COSINE", "params": {"nprobe": 10}, "radius": radius, "range": range_filter},
             limit=limit,
             output_fields=["entry_id", "title", "metadata", "text_content", "code_content", "version", "tag"],
-            expr=filter_expr
+            # expr=filter_expr``
         )
         return results
 

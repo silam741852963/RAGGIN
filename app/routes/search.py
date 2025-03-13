@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 import logging
 from app.models.schemas import HybridSearchRequest
 from app.milvus.search_manager import HybridSearchManager
+from config import MILVUS_URI
 
 router = APIRouter()
 
@@ -12,8 +13,10 @@ def hybrid_search(request: HybridSearchRequest):
     Returns results with fields: title, metadata, version, textContent, codeContent, and tag.
     """
     try:
-        search_manager = HybridSearchManager("nextjs_docs")
+        search_manager = HybridSearchManager("nextjs_docs", uri=MILVUS_URI)
         results = search_manager.hybrid_search(
+            text_query=request.text_query,
+            code_query=request.code_query,
             versionName=request.versionName,
             sparseWeight=request.sparseWeight,
             denseTextWeight=request.denseTextWeight,
@@ -21,8 +24,12 @@ def hybrid_search(request: HybridSearchRequest):
             topK=request.topK,
             filter_expr=request.filter,
             iterativeFilter=request.iterativeFilter,
-            radius=request.radius,
-            range_filter=request.rangeFilter
+            radius_sparse=request.radius_sparse,
+            range_sparse=request.range_sparse,
+            radius_dense_text=request.radius_dense_text,
+            range_dense_text=request.range_dense_text,
+            radius_dense_code=request.radius_dense_code,
+            range_dense_code=request.range_dense_code,
         )
         return {"results": results}
     except Exception as e:

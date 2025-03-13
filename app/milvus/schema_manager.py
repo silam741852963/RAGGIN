@@ -13,6 +13,12 @@ class MilvusSchemaManager:
         self.uri = uri
         self.collection = None
 
+    def _ensure_connection(self):
+        # Check if the default connection exists; if not, create it.
+        if not connections.has_connection("default"):
+            connections.connect(uri=self.uri)
+            logging.info("Connected to Milvus at %s", self.uri)
+
     def create_field_schemas(self):
         fields = [
             FieldSchema(
@@ -79,15 +85,12 @@ class MilvusSchemaManager:
         ]
         return fields
 
-    def connect_to_milvus(self):
-        connections.connect(uri=self.uri)
-        logging.info("Connected to Milvus at %s", self.uri)
-
     def create_collection(self):
+        self._ensure_connection()
         schema = CollectionSchema(
             fields=self.create_field_schemas(),
             description="Schema for documentation entries, sections, and aggregated code snippet embeddings.",
-            auto_id=False
+            auto_id=False,
         )
         if utility.has_collection(self.collection_name):
             coll = Collection(self.collection_name)
@@ -97,6 +100,7 @@ class MilvusSchemaManager:
             name=self.collection_name,
             schema=schema,
             consistency_level="Strong",
+            properties={"partitionkey.isolation": True}
         )
         logging.info("Collection '%s' created successfully.", self.collection_name)
         return self.collection
@@ -176,13 +180,14 @@ class MilvusSchemaManager:
 
     def insert_data(self, file_path):
         """Reads the entire CSV file and inserts all rows into Milvus at once."""
+        self._ensure_connection()
         data = pd.read_csv(file_path)
         entities = [self.enforce_types(row) for _, row in data.iterrows()]
         self.collection.insert(entities)
         logging.info("Inserted %d records from file %s.", len(entities), file_path)
 
     def run(self, csv_file_path, m_text: int = 16, ef_text: int = 200, m_code: int = 16, ef_code: int = 200):
-        self.connect_to_milvus()
+        self._ensure_connection()
         self.create_collection()
         self.create_indices(m_text, ef_text, m_code, ef_code)
         self.insert_data(csv_file_path)
@@ -193,12 +198,11 @@ class MilvusSchemaManager:
         """
         Deletes all documents in the collection that match the provided version using a delete expression.
         """
-        self.connect_to_milvus()
-        # Re-instantiate the collection
+        self._ensure_connection()
+        # Re-instantiate and load the collection.
         self.collection = Collection(self.collection_name)
         self.collection.load()
         expr = f"version == '{version}'"
         result = self.collection.delete(expr)
         logging.info("Deleted documents for version %s using expression '%s': %s", version, expr, result)
         return result
-

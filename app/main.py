@@ -1,11 +1,16 @@
 from fastapi import FastAPI
-from app.routes import data, search, version_manager
+from pymilvus import connections
+from config import MILVUS_URI
+from app.routes import data, search, version
 
-app = FastAPI(title="RAGGIN", version="0.1")
+app = FastAPI(title="RAGGIN", version="0.2")
+
+# Connect to Milvus once at application startup.
+connections.connect(uri=MILVUS_URI)
 
 # Include routers from different modules.
 app.include_router(data.router)
-app.include_router(version_manager.router)
+app.include_router(version.router)
 app.include_router(search.router)
 
 @app.get("/")

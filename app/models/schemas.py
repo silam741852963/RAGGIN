@@ -14,16 +14,25 @@ class SchemaRequest(BaseModel):
     batch_size: int = 100
     uri: str = "http://0.0.0.0:19530"
 
+from pydantic import BaseModel
+from typing import Optional
+
 class HybridSearchRequest(BaseModel):
+    text_query: str
+    code_query: str
     versionName: str
-    sparseWeight: float
-    denseTextWeight: float
-    denseCodeWeight: float
-    topK: int
-    filter: str
-    iterativeFilter: bool
-    radius: float
-    rangeFilter: float
+    sparseWeight: float = 1.0
+    denseTextWeight: float = 1.0
+    denseCodeWeight: float = 1.0
+    topK: int = 10
+    filter: Optional[str] = ""
+    iterativeFilter: bool = False
+    radius_sparse: float = 0.5
+    range_sparse: float = 0.5
+    radius_dense_text: float = 0.5
+    range_dense_text: float = 0.5
+    radius_dense_code: float = 0.5
+    range_dense_code: float = 0.5
 
 class RetrieveRequest(BaseModel):
     versionName: str

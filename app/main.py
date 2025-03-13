@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from app.routes import data, search, version_manager
+from app.generator import prompt_engineering
 
 app = FastAPI(title="RAGGIN", version="0.1")
 
@@ -7,6 +8,7 @@ app = FastAPI(title="RAGGIN", version="0.1")
 app.include_router(data.router)
 app.include_router(version_manager.router)
 app.include_router(search.router)
+app.include_router(prompt_engineering.router)
 
 @app.get("/")
 def read_root():

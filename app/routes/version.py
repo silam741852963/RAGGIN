@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, HTTPException
 from app.downloader.kaggle_downloader import KaggleDocumentationDownloader
 from app.milvus.schema_manager import MilvusSchemaManager
-from app.models.schemas import RetrieveRequest
+from app.classes.schemas import RetrieveRequest
 from config import DOWNLOADS_DIR, MILVUS_URI
 
 router = APIRouter()

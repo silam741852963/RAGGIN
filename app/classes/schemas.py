@@ -12,7 +12,7 @@ class SchemaRequest(BaseModel):
     collection_name: str = "nextjs_docs"
     csv_file_path: str
     batch_size: int = 100
-    uri: str = "http://0.0.0.0:19530"
+    uri: str = "http://standalone:19530"
 
 from pydantic import BaseModel
 from typing import Optional
@@ -25,7 +25,7 @@ class HybridSearchRequest(BaseModel):
     denseTextWeight: float = 1.0
     denseCodeWeight: float = 1.0
     topK: int = 10
-    filter: Optional[str] = ""
+    filter_expr: Optional[str] = ""
     iterativeFilter: bool = False
     radius_sparse: float = 0.5
     range_sparse: float = 0.5

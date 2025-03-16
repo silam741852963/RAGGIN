@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 import logging
-from app.models.schemas import HybridSearchRequest
+from app.classes.schemas import HybridSearchRequest
 from app.milvus.search_manager import HybridSearchManager
 from config import MILVUS_URI
 
@@ -22,7 +22,7 @@ def hybrid_search(request: HybridSearchRequest):
             denseTextWeight=request.denseTextWeight,
             denseCodeWeight=request.denseCodeWeight,
             topK=request.topK,
-            filter_expr=request.filter,
+            filter_expr=request.filter_expr,
             iterativeFilter=request.iterativeFilter,
             radius_sparse=request.radius_sparse,
             range_sparse=request.range_sparse,

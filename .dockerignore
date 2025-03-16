@@ -7,5 +7,7 @@ app/venv/
 __pycache__/
 *.pyc
 
-# Exclude downloads folder from being copied to the image
+# Exclude folders from being copied to the image
 downloads/
+volumes/
+BAAI/

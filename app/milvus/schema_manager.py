@@ -165,6 +165,7 @@ class MilvusSchemaManager:
             else [0.0] * DENSE_VECTOR_DIM
         )
         tag = str(row["tag"]) if pd.notna(row["tag"]) else ""
+
         return {
             "entry_id": entry_id,
             "title": title,

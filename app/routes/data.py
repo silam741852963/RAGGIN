@@ -1,6 +1,6 @@
 import os
 from fastapi import APIRouter, HTTPException
-from app.models.schemas import VersionsResponseItem
+from app.classes.schemas import VersionsResponseItem
 from config import DOWNLOADS_DIR, SUPPORTED_VERSIONS_FILE
 
 router = APIRouter()

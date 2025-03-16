@@ -73,11 +73,12 @@ services:
       - standalone
     volumes:
       - ./downloads:/downloads
-      - ./config:/config
-    environment:
-      - DOWNLOADS_DIR=/downloads
-      - SUPPORTED_VERSIONS_FILE=/config/supported_versions.txt
-      - MILVUS_URI=http://standalone:19530
+      - ./BAAI/bge-m3:/BAAI/bge-m3
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
 
 networks:
   default:

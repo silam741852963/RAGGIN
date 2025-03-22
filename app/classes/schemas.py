@@ -40,3 +40,7 @@ class RetrieveRequest(BaseModel):
     ef_text: Optional[int] = None
     m_code: Optional[int] = None
     ef_code: Optional[int] = None
+
+class GeneratorRequest(BaseModel):
+    versionName: str
+    query: str

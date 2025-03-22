@@ -5,7 +5,7 @@ from pymilvus import connections
 from config import MILVUS_URI, MODEL_CACHE_DIR
 from app.routes import data, version, search
 from huggingface_hub import snapshot_download
-
+from app.generator import prompt_engineering
 
 # Configure logging.
 logging.basicConfig(level=logging.DEBUG)
@@ -31,8 +31,13 @@ logging.debug(f"Connected to Milvus at {MILVUS_URI}")
 app.include_router(data.router)
 app.include_router(version.router)
 app.include_router(search.router)
+app.include_router(prompt_engineering.router)
 
 @app.get("/")
+def read_root():
+    return {"message": "Connected to RAGGIN API!"}
+
+@app.get("/welcome")
 def read_root():
     return {"message": "Connected to RAGGIN API!"}
 

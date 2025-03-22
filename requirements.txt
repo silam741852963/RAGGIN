@@ -86,3 +86,7 @@ warc3-wet-clueweb09==0.2.5
 xxhash==3.5.0
 yarl==1.18.3
 zlib-state==0.1.9
+langchain-core==0.3.47
+langchain-ollama==0.3.0
+langsmith==0.3.18
+ollama==0.4.7

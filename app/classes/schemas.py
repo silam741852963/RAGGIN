@@ -41,6 +41,11 @@ class RetrieveRequest(BaseModel):
     m_code: Optional[int] = None
     ef_code: Optional[int] = None
 
+class PromptRequest(BaseModel):
+    versionName: str
+    query: str
+    
 class GeneratorRequest(BaseModel):
     versionName: str
     query: str
+    model: str

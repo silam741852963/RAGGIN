@@ -41,11 +41,18 @@ class RetrieveRequest(BaseModel):
     m_code: Optional[int] = None
     ef_code: Optional[int] = None
 
+class FileModel(BaseModel):
+    fileName: str
+    fileExtension: str
+    fileContent: str
+
 class PromptRequest(BaseModel):
     versionName: str
     query: str
-    
+    file_list: Optional[list[FileModel]] = None
+
 class GeneratorRequest(BaseModel):
     versionName: str
     query: str
     model: str
+    file_list: Optional[list[FileModel]] = None

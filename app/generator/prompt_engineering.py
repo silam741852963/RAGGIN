@@ -8,6 +8,16 @@ from app.generator.prompt_utils import get_retrieved_data, parse_code_content, p
 
 router = APIRouter()
 
+@router.post("/test_prompt")
+def test_prompt(request: PromptRequest):
+    try:
+        if request.file_list is not None:
+            for file in request.file_list:
+                request.query += f"```{file.fileExtension} {file.fileName}\n{file.fileContent}```"
+        return {"prompt": request.query}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=e)
+
 @router.post("/enhance_prompt")
 def enhance_prompt(request: PromptRequest):
     """
@@ -39,11 +49,13 @@ def generate_response(request: GeneratorRequest):
         "versionName": "v15.1.2",
         "query": "How to create new page?",
         "model": "llama3.2:3b"
+        "file_path_list": ["path/to/file1", "path/to/file2"]
     }
     ```
     """
     try:
-        prompt = enhance_prompt(request)
+        prompt_request = PromptRequest(versionName=request.versionName, query=request.query, file_path_list=request.file_path_list)
+        prompt = enhance_prompt(prompt_request)
         # return {"model": request.model, "prompt": prompt['prompt'], "context": prompt['context']}
         answer = generate(model=request.model, prompt=prompt['prompt'], context=prompt['context'])
         # return {"model": request.model, "answer": answer}

@@ -2,6 +2,7 @@ import ast
 import re
 from langchain_ollama import OllamaLLM
 import requests
+from config import OLLAMA_API
 
 def parse_code_content(code_content: str):
     parsed_data = ast.literal_eval(code_content)
@@ -63,7 +64,8 @@ def generate(model: str, prompt: str, context: list[dict]):
     Question: {prompt}
     """
     # return model.invoke(query)
-    answer = requests.post("http://host.docker.internal:11434/api/generate", json={"model": model, "prompt": query, "stream": False})
+    # answer = requests.post("http://host.docker.internal:11434/api/generate", json={"model": model, "prompt": query, "stream": False})
+    answer = requests.post(OLLAMA_API, json={"model": model, "prompt": query, "stream": False})
     result = answer.json()
     result['retrieved_data'] = [ctx['title'] for ctx in context]
     return result

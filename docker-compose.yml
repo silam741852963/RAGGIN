@@ -74,6 +74,8 @@ services:
     volumes:
       - ./downloads:/downloads
       - ./BAAI/bge-m3:/BAAI/bge-m3
+    environment:
+      OLLAMA_API: http://host.docker.internal:11434/api/generate
     deploy:
       resources:
         reservations:

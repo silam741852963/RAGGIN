@@ -54,7 +54,7 @@ def generate_response(request: GeneratorRequest):
     ```
     """
     try:
-        prompt_request = PromptRequest(versionName=request.versionName, query=request.query, file_path_list=request.file_path_list)
+        prompt_request = PromptRequest(versionName=request.versionName, query=request.query, file_list=request.file_list)
         prompt = enhance_prompt(prompt_request)
         # return {"model": request.model, "prompt": prompt['prompt'], "context": prompt['context']}
         answer = generate(model=request.model, prompt=prompt['prompt'], context=prompt['context'])

@@ -48,7 +48,7 @@ def split_text_and_code(document: str):
     # Iterate through the segments to separate text and code pairs
     return {"text": [t.strip() for t in text], "code": [c.strip() for c in code]}
 
-def generate(model: str, prompt: str, context: str):
+def generate(model: str, prompt: str, context: list[dict]):
     """Generates a response using Ollama LLM.
     """
     # model = OllamaLLM(model=model)

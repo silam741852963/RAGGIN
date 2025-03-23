@@ -49,7 +49,7 @@ def generate_response(request: GeneratorRequest):
         "versionName": "v15.1.2",
         "query": "How to create new page?",
         "model": "llama3.2:3b"
-        "file_path_list": ["path/to/file1", "path/to/file2"]
+        "file_list": [file1, file2]
     }
     ```
     """

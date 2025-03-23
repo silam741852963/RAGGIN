@@ -23,7 +23,7 @@ def enhance_prompt(request: PromptRequest):
         hybrid_search_request = HybridSearchRequest(versionName=request.versionName, text_query=text_query, code_query=code_query)
         retrieved_docs = hybrid_search(hybrid_search_request)
 
-        return {"prompt": request.query, "context": get_retrieved_data(retrieved_docs['results'])}
+        return {"prompt": request.query, "context": retrieved_docs['results']}
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=e)

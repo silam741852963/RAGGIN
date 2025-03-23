@@ -52,18 +52,20 @@ def generate(model: str, prompt: str, context: str):
     """Generates a response using Ollama LLM.
     """
     # model = OllamaLLM(model=model)
-
+    context_str = get_retrieved_data(context)
     query = f"""
     You are a helpful and friendly Next.js assistant. 
     Your responsibility is to answer user queries about Next.js. 
     Answer the question based only and only on the given context below (which got from Next.js documentation). If you can't answer the question, reply "I don't know".
 
-    Context: {context}
+    Context: {context_str}
 
     Question: {prompt}
     """
     # return model.invoke(query)
-    result = requests.post("http://host.docker.internal:11434/api/generate", json={"model": model, "prompt": query, "stream": False})
-    return result.json()
+    answer = requests.post("http://host.docker.internal:11434/api/generate", json={"model": model, "prompt": query, "stream": False})
+    result = answer.json()
+    result['retrieved_data'] = [ctx['title'] for ctx in context]
+    return result
     
     

@@ -1,4 +1,4 @@
-# 🧠 RAGGIN: RAG-Powered Assistant for Next.js Developers
+# 🧠 RAGGIN: Retrieval-Augmented Generation for Guided Intelligence in Next.js
 
 ![Docker Pulls](https://img.shields.io/docker/pulls/melukootto/raggin)
 ![License](https://img.shields.io/github/license/silam741852963/raggin)

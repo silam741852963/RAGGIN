@@ -28,7 +28,25 @@ POST /generate_response
     {
         "versionName": "v15.0.0",
         "query": "How does Next.js handle static generation?",
-        "model": "llama3.2:3b"
+        "model": "llama3.2:3b",
+        "file_list": [
+            {
+                "fileExtension": "js",
+                "fileName": "next.config.js",
+                "fileContent": "module.exports = { ... }"
+            }
+        ],
+        "additional_options": {
+            "retriever_options": {
+                "denseCodeWeight": 0.5,
+                "denseTextWeight": 0.5,
+                "topK": 3,
+            },
+            "generator_options": {
+                "temperature": 0.5,
+                "top_p": 0.9
+            }
+        }
     }
     ```
 - **Example Output:**
@@ -38,7 +56,8 @@ POST /generate_response
         "response": "Next.js supports static site generation using `getStaticProps`. This function allows pre-rendering pages at build time for better performance.",
         "retrieved_data": [
             {document1},
-            {document2}
+            {document2},
+            {document3}
         ]
     }
     ```

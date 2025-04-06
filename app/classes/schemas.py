@@ -42,17 +42,57 @@ class RetrieveRequest(BaseModel):
     ef_code: Optional[int] = None
 
 class FileModel(BaseModel):
-    fileName: str
-    fileExtension: str
+    fileName: str = ""
+    fileExtension: str = ""
     fileContent: str
-
-class PromptRequest(BaseModel):
-    versionName: str
-    query: str
-    file_list: Optional[list[FileModel]] = None
-
+    
+class RetrieverOptions(BaseModel):
+    m_text: Optional[int] = None
+    ef_text: Optional[int] = None
+    m_code: Optional[int] = None
+    ef_code: Optional[int] = None
+    sparseWeight: Optional[float] = 1.0
+    denseTextWeight: Optional[float] = 1.0
+    denseCodeWeight: Optional[float] = 1.0
+    topK: Optional[int] = None
+    filter_expr: Optional[str] = None
+    iterativeFilter: Optional[bool] = False
+    radius_sparse: Optional[float] = 0.5
+    range_sparse: Optional[float] = 0.5
+    radius_dense_text: Optional[float] = 0.5
+    range_dense_text: Optional[float] = 0.5
+    radius_dense_code: Optional[float] = 0.5
+    range_dense_code: Optional[float] = 0.5
+    
+class GeneratorOptions(BaseModel):
+    microstat: Optional[int] = None
+    microstat_eta: Optional[float] = None
+    mirostat_tau: Optional[float] = None
+    num_ctx: Optional[int] = None
+    repeat_last_n: Optional[int] = None
+    repeat_penalty: Optional[float] = None
+    temperature: Optional[float] = None
+    seed: Optional[int] = None
+    stop: Optional[str] = None
+    num_predict: Optional[int] = None
+    top_k: Optional[int] = None
+    top_p: Optional[float] = None
+    min_p: Optional[float] = None
+    
+class APIOptions(BaseModel):
+    retriever_options: Optional[RetrieverOptions] = None
+    generator_options: Optional[GeneratorOptions] = None
+    
 class GeneratorRequest(BaseModel):
     versionName: str
     query: str
     model: str
     file_list: Optional[list[FileModel]] = None
+    additional_options: Optional[APIOptions] = None
+    
+class PromptRequest(BaseModel):
+    versionName: str
+    query: str
+    file_list: Optional[list[FileModel]] = None
+    retriever_options: Optional[RetrieverOptions] = None
+    generator_options: Optional[GeneratorOptions] = None

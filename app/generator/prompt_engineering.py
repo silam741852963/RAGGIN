@@ -30,10 +30,27 @@ def enhance_prompt(request: PromptRequest):
         query_dict = split_text_and_code(request.query)
         text_query = " ".join(query_dict['text'])
         code_query = " ".join(query_dict['code'])
-        hybrid_search_request = HybridSearchRequest(versionName=request.versionName, text_query=text_query, code_query=code_query)
+        hybrid_search_request = HybridSearchRequest(versionName=request.versionName,
+                                                    text_query=text_query, 
+                                                    code_query=code_query,
+                                                    denseCodeWeight=request.retriever_options.denseCodeWeight,
+                                                    denseTextWeight=request.retriever_options.denseTextWeight,
+                                                    topK=request.retriever_options.topK,
+                                                    filter_expr=request.retriever_options.filter_expr,
+                                                    iterativeFilter=request.retriever_options.iterativeFilter,
+                                                    radius_sparse=request.retriever_options.radius_sparse,
+                                                    range_sparse=request.retriever_options.range_sparse,
+                                                    radius_dense_text=request.retriever_options.radius_dense_text,
+                                                    range_dense_text=request.retriever_options.range_dense_text,
+                                                    radius_dense_code=request.retriever_options.radius_dense_code,
+                                                    range_dense_code=request.retriever_options.range_dense_code,
+                                                    )
         retrieved_docs = hybrid_search(hybrid_search_request)
-
-        return {"prompt": request.query, "context": retrieved_docs['results']}
+        final_query = request.query
+        if request.file_list is not None:
+            for file in request.file_list:
+                final_query += f"\n```{file.fileExtension} {file.fileName}\n{file.fileContent}```"
+        return {"prompt": final_query, "context": retrieved_docs['results']}
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=e)
@@ -48,13 +65,39 @@ def generate_response(request: GeneratorRequest):
     {
         "versionName": "v15.1.2",
         "query": "How to create new page?",
-        "model": "llama3.2:3b"
-        "file_list": [file1, file2]
+        "model": "llama3.2:3b",
+        "file_list": [
+            {
+                "fileExtension": "js",
+                "fileName": "next.config.js",
+                "fileContent": "module.exports = { ... }"
+            },
+            {
+                "fileExtension": "js",
+                "fileName": "index.js",
+                "fileContent": "export default function Home() { ... }"
+            }
+        ],
+        "additional_options": {
+            "retriever_options": {
+                "denseCodeWeight": 0.5,
+                "denseTextWeight": 0.5,
+                "topK": 3,
+            },
+            "generator_options": {
+                "temperature": 0.5,
+                "top_p": 0.9
+            }
+        }
     }
     ```
     """
     try:
-        prompt_request = PromptRequest(versionName=request.versionName, query=request.query, file_list=request.file_list)
+        prompt_request = PromptRequest(versionName=request.versionName, 
+                                       query=request.query, 
+                                       file_list=request.file_list, 
+                                       retriever_options=request.additional_options.retriever_options, 
+                                       generator_options=request.additional_options.generator_options)
         prompt = enhance_prompt(prompt_request)
         # return {"model": request.model, "prompt": prompt['prompt'], "context": prompt['context']}
         answer = generate(model=request.model, prompt=prompt['prompt'], context=prompt['context'])

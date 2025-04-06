@@ -40,7 +40,7 @@ POST /generate_response
             "retriever_options": {
                 "denseCodeWeight": 0.5,
                 "denseTextWeight": 0.5,
-                "topK": 3,
+                "topK": 3
             },
             "generator_options": {
                 "temperature": 0.5,

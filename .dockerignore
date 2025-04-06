@@ -11,3 +11,6 @@ __pycache__/
 downloads/
 volumes/
 BAAI/
+
+# Ignore pdf report file
+Report/

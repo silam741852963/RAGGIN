@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 import logging
-from app.classes.schemas import PromptRequest, GeneratorRequest, HybridSearchRequest
+from app.classes.schemas import PromptRequest, GeneratorRequest, HybridSearchRequest, RetrieverOptions, GeneratorOptions, APIOptions
 from app.routes.data import load_supported_versions
 from app.routes.search import hybrid_search
 from config import SUPPORTED_VERSIONS_FILE
@@ -28,22 +28,35 @@ def enhance_prompt(request: PromptRequest):
         if request.versionName not in supported_versions:
             raise HTTPException(status_code=404, detail=f"Version {request.versionName} is not supported.")
         query_dict = split_text_and_code(request.query)
+        
         text_query = " ".join(query_dict['text'])
         code_query = " ".join(query_dict['code'])
+        denseCodeWeight = request.retriever_options.denseCodeWeight if request.retriever_options.denseCodeWeight is not None else 0.5
+        denseTextWeight = request.retriever_options.denseTextWeight if request.retriever_options.denseTextWeight is not None else 0.5
+        topK = request.retriever_options.topK if request.retriever_options.topK is not None else 3
+        filter_expr = request.retriever_options.filter_expr if request.retriever_options.filter_expr is not None else None
+        iterativeFilter = request.retriever_options.iterativeFilter if request.retriever_options.iterativeFilter is not None else False
+        radius_sparse = request.retriever_options.radius_sparse if request.retriever_options.radius_sparse is not None else 0.5
+        range_sparse = request.retriever_options.range_sparse if request.retriever_options.range_sparse is not None else 0.5
+        radius_dense_text = request.retriever_options.radius_dense_text if request.retriever_options.radius_dense_text is not None else 0.5
+        range_dense_text = request.retriever_options.range_dense_text if request.retriever_options.range_dense_text is not None else 0.5
+        radius_dense_code = request.retriever_options.radius_dense_code if request.retriever_options.radius_dense_code is not None else 0.5
+        range_dense_code = request.retriever_options.range_dense_code if request.retriever_options.range_dense_code is not None else 0.5
+        
         hybrid_search_request = HybridSearchRequest(versionName=request.versionName,
                                                     text_query=text_query, 
                                                     code_query=code_query,
-                                                    denseCodeWeight=request.retriever_options.denseCodeWeight,
-                                                    denseTextWeight=request.retriever_options.denseTextWeight,
-                                                    topK=request.retriever_options.topK,
-                                                    filter_expr=request.retriever_options.filter_expr,
-                                                    iterativeFilter=request.retriever_options.iterativeFilter,
-                                                    radius_sparse=request.retriever_options.radius_sparse,
-                                                    range_sparse=request.retriever_options.range_sparse,
-                                                    radius_dense_text=request.retriever_options.radius_dense_text,
-                                                    range_dense_text=request.retriever_options.range_dense_text,
-                                                    radius_dense_code=request.retriever_options.radius_dense_code,
-                                                    range_dense_code=request.retriever_options.range_dense_code,
+                                                    denseCodeWeight=denseCodeWeight,
+                                                    denseTextWeight=denseTextWeight,
+                                                    topK=topK,
+                                                    filter_expr=filter_expr,
+                                                    iterativeFilter=iterativeFilter,
+                                                    radius_sparse=radius_sparse,
+                                                    range_sparse=range_sparse,
+                                                    radius_dense_text=radius_dense_text,
+                                                    range_dense_text=range_dense_text,
+                                                    radius_dense_code=radius_dense_code,
+                                                    range_dense_code=range_dense_code,
                                                     )
         retrieved_docs = hybrid_search(hybrid_search_request)
         final_query = request.query
@@ -93,11 +106,15 @@ def generate_response(request: GeneratorRequest):
     ```
     """
     try:
+        if request.additional_options is None:
+            request.additional_options = APIOptions()
+        retriever_options = request.additional_options.retriever_options if request.additional_options.retriever_options is not None else RetrieverOptions()
+        generator_options = request.additional_options.generator_options if request.additional_options.generator_options is not None else GeneratorOptions()
         prompt_request = PromptRequest(versionName=request.versionName, 
                                        query=request.query, 
                                        file_list=request.file_list, 
-                                       retriever_options=request.additional_options.retriever_options, 
-                                       generator_options=request.additional_options.generator_options)
+                                       retriever_options=retriever_options, 
+                                       generator_options=generator_options)
         prompt = enhance_prompt(prompt_request)
         # return {"model": request.model, "prompt": prompt['prompt'], "context": prompt['context']}
         answer = generate(model=request.model, prompt=prompt['prompt'], context=prompt['context'])

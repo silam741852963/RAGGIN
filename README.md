@@ -31,7 +31,7 @@
 - Handles metadata-aware semantic retrieval for high precision
 
 ### Generator
-- Works with local models via [Ollama](https://ollama.com/) or LangChain
+- Works with local models via [Ollama](https://ollama.com/)'s API.
 - Combines retrieved documentation with user queries for grounded response generation
 - Generates helpful code examples, explanations, or upgrade paths
 

@@ -56,22 +56,23 @@ def history_string(history: list[ChatHistory]) -> str:
         final_string += f"<query>{str(chat.query)}</query> <response>{str(chat.response)}</response>\\n"
     return final_string + "]</chat history>"
 
-def generate(model: str, prompt: str, context: list[dict], options: dict):
+def generate(model: str, prompt: str, context: list[dict], history: list[ChatHistory], options: dict = None):
     """Generates a response using Ollama LLM.
     """
     # model = OllamaLLM(model=model)
-    context_str = get_retrieved_data(context)
+    context_str = history_string(history) + get_retrieved_data(context)
     query = f"""
     You are a helpful and friendly Next.js assistant. 
     Your responsibility is to answer user queries about Next.js. 
     Answer the question based only and only on the given context below (which got from Next.js documentation). If you can't answer the question, reply "I don't know".
 
-    Context: {context_str}
+    Context: {str(context_str)}
 
-    Question: {prompt}
+    Question: {str(prompt)}
     """
     # return model.invoke(query)
     # answer = requests.post("http://host.docker.internal:11434/api/generate", json={"model": model, "prompt": query, "stream": False})
+    # return {"model": model, "options": options, "retrieved_data": [ctx['title'] for ctx in context]}
     answer = requests.post(OLLAMA_API, json={"model": model, "prompt": query, "stream": False, "options": options})
     result = answer.json()
     result['retrieved_data'] = [ctx['title'] for ctx in context]

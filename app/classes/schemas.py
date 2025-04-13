@@ -115,7 +115,7 @@ class GeneratorRequest(BaseModel):
 class PromptRequest(BaseModel):
     versionName: str
     query: str
-    history: Optional[list[ChatHistory]] = None
+    # history: Optional[list[ChatHistory]] = None
     file_list: Optional[list[FileModel]] = None
     retriever_options: Optional[RetrieverOptions] = None
     generator_options: Optional[GeneratorOptions] = None

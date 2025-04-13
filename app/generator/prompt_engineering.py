@@ -63,8 +63,8 @@ def enhance_prompt(request: PromptRequest):
         if request.file_list is not None:
             for file in request.file_list:
                 final_query += f"\n```{file.fileExtension} {file.fileName}\n{file.fileContent}```"
-        history = history_string(request.history)
-        return {"prompt": final_query, "context": retrieved_docs['results'], "history": history}
+        # history = history_string(request.history)
+        return {"prompt": final_query, "context": retrieved_docs['results']}
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=e)
@@ -113,16 +113,14 @@ def generate_response(request: GeneratorRequest):
         generator_options = request.additional_options.generator_options if request.additional_options.generator_options is not None else GeneratorOptions()
         chat_history = request.history if request.history is not None else []
         prompt_request = PromptRequest(versionName=request.versionName, 
-                                       query=request.query, 
-                                       history=chat_history,
+                                       query=request.query,
                                        file_list=request.file_list, 
                                        retriever_options=retriever_options, 
                                        generator_options=generator_options)
         prompt = enhance_prompt(prompt_request)
-        full_context = prompt['history'] + prompt['context']
         # return {"model": request.model, "prompt": prompt['prompt'], "context": prompt['context']}
         # g_option = request.additional_options.generator_options if request.additional_options.generator_options is not None else dict()
-        answer = generate(model=request.model, prompt=prompt['prompt'], context=full_context, options=generator_options.get_dict())
+        answer = generate(model=request.model, prompt=prompt['prompt'], context=prompt['context'], history=chat_history, options=generator_options)
         # return {"model": request.model, "answer": answer}
         return answer
     except Exception as e:

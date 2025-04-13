@@ -79,6 +79,23 @@ class GeneratorOptions(BaseModel):
     top_p: Optional[float] = None
     min_p: Optional[float] = None
     
+    def get_dict(self) -> dict:
+        return {
+            "microstat": self.microstat,
+            "microstat_eta": self.microstat_eta,
+            "mirostat_tau": self.mirostat_tau,
+            "num_ctx": self.num_ctx,
+            "repeat_last_n": self.repeat_last_n,
+            "repeat_penalty": self.repeat_penalty,
+            "temperature": self.temperature,
+            "seed": self.seed,
+            "stop": self.stop,
+            "num_predict": self.num_predict,
+            "top_k": self.top_k,
+            "top_p": self.top_p,
+            "min_p": self.min_p,
+        }
+    
 class APIOptions(BaseModel):
     retriever_options: Optional[RetrieverOptions] = None
     generator_options: Optional[GeneratorOptions] = None

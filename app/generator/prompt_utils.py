@@ -49,7 +49,7 @@ def split_text_and_code(document: str):
     # Iterate through the segments to separate text and code pairs
     return {"text": [t.strip() for t in text], "code": [c.strip() for c in code]}
 
-def generate(model: str, prompt: str, context: list[dict]):
+def generate(model: str, prompt: str, context: list[dict], options: dict):
     """Generates a response using Ollama LLM.
     """
     # model = OllamaLLM(model=model)
@@ -65,7 +65,7 @@ def generate(model: str, prompt: str, context: list[dict]):
     """
     # return model.invoke(query)
     # answer = requests.post("http://host.docker.internal:11434/api/generate", json={"model": model, "prompt": query, "stream": False})
-    answer = requests.post(OLLAMA_API, json={"model": model, "prompt": query, "stream": False})
+    answer = requests.post(OLLAMA_API, json={"model": model, "prompt": query, "stream": False, "options": options})
     result = answer.json()
     result['retrieved_data'] = [ctx['title'] for ctx in context]
     return result

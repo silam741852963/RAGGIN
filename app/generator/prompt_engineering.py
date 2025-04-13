@@ -117,7 +117,8 @@ def generate_response(request: GeneratorRequest):
                                        generator_options=generator_options)
         prompt = enhance_prompt(prompt_request)
         # return {"model": request.model, "prompt": prompt['prompt'], "context": prompt['context']}
-        answer = generate(model=request.model, prompt=prompt['prompt'], context=prompt['context'])
+        # g_option = request.additional_options.generator_options if request.additional_options.generator_options is not None else dict()
+        answer = generate(model=request.model, prompt=prompt['prompt'], context=prompt['context'], options=generator_options.get_dict())
         # return {"model": request.model, "answer": answer}
         return answer
     except Exception as e:

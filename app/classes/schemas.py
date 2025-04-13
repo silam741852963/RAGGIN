@@ -99,17 +99,23 @@ class GeneratorOptions(BaseModel):
 class APIOptions(BaseModel):
     retriever_options: Optional[RetrieverOptions] = None
     generator_options: Optional[GeneratorOptions] = None
-    
+
+class ChatHistory(BaseModel):
+    query: str
+    response: str
+
 class GeneratorRequest(BaseModel):
     versionName: str
     query: str
     model: str
+    history: Optional[list[ChatHistory]] = None
     file_list: Optional[list[FileModel]] = None
     additional_options: Optional[APIOptions] = None
     
 class PromptRequest(BaseModel):
     versionName: str
     query: str
+    history: Optional[list[ChatHistory]] = None
     file_list: Optional[list[FileModel]] = None
     retriever_options: Optional[RetrieverOptions] = None
     generator_options: Optional[GeneratorOptions] = None

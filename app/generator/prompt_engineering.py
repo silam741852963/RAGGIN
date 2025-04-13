@@ -4,7 +4,7 @@ from app.classes.schemas import PromptRequest, GeneratorRequest, HybridSearchReq
 from app.routes.data import load_supported_versions
 from app.routes.search import hybrid_search
 from config import SUPPORTED_VERSIONS_FILE
-from app.generator.prompt_utils import get_retrieved_data, parse_code_content, place_snippets_in_text, split_text_and_code, generate
+from app.generator.prompt_utils import get_retrieved_data, parse_code_content, place_snippets_in_text, split_text_and_code, generate, history_string
 
 router = APIRouter()
 
@@ -63,7 +63,8 @@ def enhance_prompt(request: PromptRequest):
         if request.file_list is not None:
             for file in request.file_list:
                 final_query += f"\n```{file.fileExtension} {file.fileName}\n{file.fileContent}```"
-        return {"prompt": final_query, "context": retrieved_docs['results']}
+        history = history_string(request.history)
+        return {"prompt": final_query, "context": retrieved_docs['results'], "history": history}
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=e)
@@ -110,15 +111,18 @@ def generate_response(request: GeneratorRequest):
             request.additional_options = APIOptions()
         retriever_options = request.additional_options.retriever_options if request.additional_options.retriever_options is not None else RetrieverOptions()
         generator_options = request.additional_options.generator_options if request.additional_options.generator_options is not None else GeneratorOptions()
+        chat_history = request.history if request.history is not None else []
         prompt_request = PromptRequest(versionName=request.versionName, 
                                        query=request.query, 
+                                       history=chat_history,
                                        file_list=request.file_list, 
                                        retriever_options=retriever_options, 
                                        generator_options=generator_options)
         prompt = enhance_prompt(prompt_request)
+        full_context = prompt['history'] + prompt['context']
         # return {"model": request.model, "prompt": prompt['prompt'], "context": prompt['context']}
         # g_option = request.additional_options.generator_options if request.additional_options.generator_options is not None else dict()
-        answer = generate(model=request.model, prompt=prompt['prompt'], context=prompt['context'], options=generator_options.get_dict())
+        answer = generate(model=request.model, prompt=prompt['prompt'], context=full_context, options=generator_options.get_dict())
         # return {"model": request.model, "answer": answer}
         return answer
     except Exception as e:

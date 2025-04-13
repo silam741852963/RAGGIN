@@ -3,6 +3,7 @@ import re
 from langchain_ollama import OllamaLLM
 import requests
 from config import OLLAMA_API
+from app.classes.schemas import ChatHistory
 
 def parse_code_content(code_content: str):
     parsed_data = ast.literal_eval(code_content)
@@ -48,6 +49,12 @@ def split_text_and_code(document: str):
     code = re.findall(code_block_pattern, document)
     # Iterate through the segments to separate text and code pairs
     return {"text": [t.strip() for t in text], "code": [c.strip() for c in code]}
+
+def history_string(history: list[ChatHistory]) -> str:
+    final_string = "<chat history>[\\n"
+    for chat in history:
+        final_string += f"<query>{str(chat.query)}</query> <response>{str(chat.response)}</response>\\n"
+    return final_string + "]</chat history>"
 
 def generate(model: str, prompt: str, context: list[dict], options: dict):
     """Generates a response using Ollama LLM.

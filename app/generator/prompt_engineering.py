@@ -111,6 +111,7 @@ def generate_response(request: GeneratorRequest):
             request.additional_options = APIOptions()
         retriever_options = request.additional_options.retriever_options if request.additional_options.retriever_options is not None else RetrieverOptions()
         generator_options = request.additional_options.generator_options if request.additional_options.generator_options is not None else GeneratorOptions()
+        # return {"generator_options": generator_options, "retriever_options": retriever_options}
         chat_history = request.history if request.history is not None else []
         prompt_request = PromptRequest(versionName=request.versionName, 
                                        query=request.query,
@@ -120,7 +121,9 @@ def generate_response(request: GeneratorRequest):
         prompt = enhance_prompt(prompt_request)
         # return {"model": request.model, "prompt": prompt['prompt'], "context": prompt['context']}
         # g_option = request.additional_options.generator_options if request.additional_options.generator_options is not None else dict()
-        answer = generate(model=request.model, prompt=prompt['prompt'], context=prompt['context'], history=chat_history, options=generator_options)
+        # return {"model": request.model, "prompt": prompt['prompt'], "context": prompt['context'], "history": chat_history, "generator_options": generator_options}
+        # return {"options": generator_options.get_dict()}
+        answer = generate(model=request.model, prompt=prompt['prompt'], context=prompt['context'], history=chat_history, options=generator_options.get_dict())
         # return {"model": request.model, "answer": answer}
         return answer
     except Exception as e:

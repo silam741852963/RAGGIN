@@ -1,119 +1,123 @@
-import os
+from __future__ import annotations
+
 import logging
+import os
+from functools import lru_cache
+from pathlib import Path
+
 from fastapi import APIRouter, HTTPException
+
 from app.downloader.kaggle_downloader import KaggleDocumentationDownloader
 from app.milvus.schema_manager import MilvusSchemaManager
 from app.classes.schemas import RetrieveRequest
 from config import DOWNLOADS_DIR, MILVUS_URI
 
-router = APIRouter()
+router = APIRouter(prefix="/version", tags=["version"])
 
-def get_csv_file_path(version: str) -> str:
-    version_file = version if version.endswith(".csv") else f"{version}.csv"
-    return os.path.join(DOWNLOADS_DIR, version_file)
+CSV_DIR = Path(DOWNLOADS_DIR).resolve()
+
+
+# -----------------------------------------------------------------------------
+# Helpers
+# -----------------------------------------------------------------------------
+
+def _csv_path(version: str) -> Path:
+    file = version if version.endswith(".csv") else f"{version}.csv"
+    return CSV_DIR / file
+
+
+def _validate_index_params(m_val: int, ef_val: int, *, name: str) -> None:  # noqa: D401
+    """Raise 400 if m/ef are outside allowed bounds."""
+    if not 2 <= m_val <= 2048:
+        raise HTTPException(status_code=400, detail=f"Invalid {name}: must be between 2 and 2048")
+    if ef_val < 1:
+        raise HTTPException(status_code=400, detail=f"Invalid ef_{name}: must be at least 1")
+
+
+@lru_cache(maxsize=1)
+def _manager() -> MilvusSchemaManager:
+    return MilvusSchemaManager("nextjs_docs", uri=MILVUS_URI)
+
+
+_downloader = KaggleDocumentationDownloader()
+
+# -----------------------------------------------------------------------------
+# Routes
+# -----------------------------------------------------------------------------
+
 
 @router.post("/retrieve")
-def retrieve_data(request: RetrieveRequest):
-    """
-    Downloads a CSV file from Kaggle for the given versionName (if not already downloaded)
-    and then inserts the data into Milvus using the provided index parameters.
-    """
-    version = request.versionName
-    csv_file = get_csv_file_path(version)
-    if os.path.exists(csv_file):
-        return {"message": f"Version {version} is already downloaded.", "file_path": csv_file}
-    
-    # Retrieve index parameters for text and code
-    m_text = request.m_text if request.m_text is not None else 16
-    ef_text = request.ef_text if request.ef_text is not None else 200
-    m_code = request.m_code if request.m_code is not None else 16
-    ef_code = request.ef_code if request.ef_code is not None else 200
+def retrieve_data(req: RetrieveRequest):
+    version = req.version_name
+    csv_path = _csv_path(version)
+    if csv_path.exists():
+        return {"message": f"Version {version} already downloaded", "file_path": str(csv_path)}
 
-    # Validate parameters:
-    if not (2 <= m_text <= 2048):
-        raise HTTPException(status_code=400, detail="Invalid m_text: must be between 2 and 2048.")
-    if not (2 <= m_code <= 2048):
-        raise HTTPException(status_code=400, detail="Invalid m_code: must be between 2 and 2048.")
-    if ef_text < 1:
-        raise HTTPException(status_code=400, detail="Invalid ef_text: must be at least 1.")
-    if ef_code < 1:
-        raise HTTPException(status_code=400, detail="Invalid ef_code: must be at least 1.")
-    
+    m_text = req.m_text or 16
+    ef_text = req.ef_text or 200
+    m_code = req.m_code or 16
+    ef_code = req.ef_code or 200
+    _validate_index_params(m_text, ef_text, name="m_text")
+    _validate_index_params(m_code, ef_code, name="m_code")
+
     try:
-        downloader = KaggleDocumentationDownloader()
-        file_path = downloader.load_and_save_version(version, destination=DOWNLOADS_DIR)
-        manager = MilvusSchemaManager("nextjs_docs", uri=MILVUS_URI)
-        # Updated run method now accepts separate parameters for text and code indices.
-        manager.run(file_path, m_text, ef_text, m_code, ef_code)
-        return {"message": "File retrieved and data inserted successfully", "file_path": file_path}
-    except Exception as e:
-        logging.exception("Error in retrieve_data endpoint")
-        raise HTTPException(status_code=500, detail=str(e))
+        csv_downloaded = _downloader.load_and_save_version(version, destination=CSV_DIR)
+        _manager().build_from_csv(
+            csv_downloaded,
+            m_text=m_text,
+            ef_text=ef_text,
+            m_code=m_code,
+            ef_code=ef_code,
+        )
+        return {"message": "File retrieved & ingested", "file_path": str(csv_downloaded)}
+    except Exception as exc:  # pragma: no cover – generic failure
+        logging.exception("retrieve_data failed")
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
 
 @router.delete("/delete")
-def delete_version(request: RetrieveRequest):
-    """
-    Deletes a version: checks if the version CSV is downloaded,
-    removes its data from Milvus, and deletes the CSV file.
-    """
-    version = request.versionName
-    csv_file = get_csv_file_path(version)
-    if not os.path.exists(csv_file):
-        return {"message": f"Version {version} is not downloaded."}
+def delete_version(req: RetrieveRequest):
+    version = req.version_name
+    path = _csv_path(version)
+    if not path.exists():
+        return {"message": f"Version {version} not downloaded"}
+
     try:
-        manager = MilvusSchemaManager("nextjs_docs", uri=MILVUS_URI)
-        manager.delete_version(version)
-    except Exception as e:
-        logging.exception("Error deleting version from DB")
-        raise HTTPException(status_code=500, detail=str(e))
-    try:
-        os.remove(csv_file)
-        logging.info("Deleted CSV file for version %s", version)
-    except Exception as e:
-        logging.exception("Error deleting CSV file")
-        raise HTTPException(status_code=500, detail=str(e))
-    return {"message": f"Version {version} deleted successfully."}
+        _manager().delete_version(version)
+        path.unlink()
+        logging.info("Deleted CSV %s", path)
+        return {"message": f"Version {version} deleted"}
+    except Exception as exc:
+        logging.exception("Delete version failed")
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
 
 @router.post("/repair")
-def repair_version(request: RetrieveRequest):
-    """
-    Repairs a version by deleting its data from Milvus (if present) and
-    re-downloading and re-inserting the data using the provided index parameters.
-    """
-    version = request.versionName
-    csv_file = get_csv_file_path(version)
-    
-    m_text = request.m_text if request.m_text is not None else 16
-    ef_text = request.ef_text if request.ef_text is not None else 200
-    m_code = request.m_code if request.m_code is not None else 16
-    ef_code = request.ef_code if request.ef_code is not None else 200
+def repair_version(req: RetrieveRequest):
+    version = req.version_name
+    path = _csv_path(version)
 
-    if not (2 <= m_text <= 2048):
-        raise HTTPException(status_code=400, detail="Invalid m_text: must be between 2 and 2048.")
-    if not (2 <= m_code <= 2048):
-        raise HTTPException(status_code=400, detail="Invalid m_code: must be between 2 and 2048.")
-    if ef_text < 1:
-        raise HTTPException(status_code=400, detail="Invalid ef_text: must be at least 1.")
-    if ef_code < 1:
-        raise HTTPException(status_code=400, detail="Invalid ef_code: must be at least 1.")
-    
-    # Delete existing data and CSV if present
-    if os.path.exists(csv_file):
+    m_text = req.m_text or 16
+    ef_text = req.ef_text or 200
+    m_code = req.m_code or 16
+    ef_code = req.ef_code or 200
+    _validate_index_params(m_text, ef_text, name="m_text")
+    _validate_index_params(m_code, ef_code, name="m_code")
+
+    # delete existing
+    if path.exists():
         try:
-            manager = MilvusSchemaManager("nextjs_docs", uri=MILVUS_URI)
-            manager.delete_version(version)
-            os.remove(csv_file)
-            logging.info("Deleted CSV file for version %s during repair", version)
-        except Exception as e:
-            logging.exception("Error deleting version during repair")
-            raise HTTPException(status_code=500, detail=str(e))
-    # Re-run retrieval process with index parameters
+            _manager().delete_version(version)
+            path.unlink()
+            logging.info("Removed stale CSV %s", path)
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Error cleaning old data: {exc}") from exc
+
+    # fresh download + ingest
     try:
-        downloader = KaggleDocumentationDownloader()
-        new_file_path = downloader.load_and_save_version(version, destination=DOWNLOADS_DIR)
-        manager = MilvusSchemaManager("nextjs_docs", uri=MILVUS_URI)
-        manager.run(new_file_path, m_text, ef_text, m_code, ef_code)
-        return {"message": f"Version {version} repaired successfully.", "file_path": new_file_path}
-    except Exception as e:
-        logging.exception("Error repairing version")
-        raise HTTPException(status_code=500, detail=str(e))
+        new_path = _downloader.load_and_save_version(version, destination=CSV_DIR)
+        _manager().build_from_csv(new_path, m_text=m_text, ef_text=ef_text, m_code=m_code, ef_code=ef_code)
+        return {"message": f"Version {version} repaired", "file_path": str(new_path)}
+    except Exception as exc:
+        logging.exception("Repair failed")
+        raise HTTPException(status_code=500, detail=str(exc)) from exc

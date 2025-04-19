@@ -1,32 +1,65 @@
-from pydantic import BaseModel
-from typing import Optional
+from __future__ import annotations
 
-class VersionsResponseItem(BaseModel):
-    versionName: str
+from typing import List, Optional, Dict, Any
+
+from pydantic import BaseModel, Field
+
+# -----------------------------------------------------------------------------
+# Pydantic config mixin – snake_case internally / camelCase on the wire
+# -----------------------------------------------------------------------------
+
+class _SnakeModel(BaseModel):
+    class Config:
+        alias_generator = None
+        populate_by_name = True
+        from_attributes = True
+
+
+# -----------------------------------------------------------------------------
+# Version / dataset models
+# -----------------------------------------------------------------------------
+
+class VersionsResponseItem(_SnakeModel):
+    version_name: str = Field(...)
     downloaded: bool
 
-class RetrieveRequest(BaseModel):
-    versionName: str
 
-class SchemaRequest(BaseModel):
+class RetrieveRequest(_SnakeModel):
+    version_name: str
+    m_text: Optional[int] = None
+    ef_text: Optional[int] = None
+    m_code: Optional[int] = None
+    ef_code: Optional[int] = None
+
+
+# -----------------------------------------------------------------------------
+# Collection build request
+# -----------------------------------------------------------------------------
+
+class SchemaRequest(_SnakeModel):
     collection_name: str = "nextjs_docs"
     csv_file_path: str
     batch_size: int = 100
     uri: str = "http://standalone:19530"
 
-from pydantic import BaseModel
-from typing import Optional
 
-class HybridSearchRequest(BaseModel):
+# -----------------------------------------------------------------------------
+# Search
+# -----------------------------------------------------------------------------
+
+class SearchRequest(_SnakeModel):
     text_query: str
     code_query: str
-    versionName: str
-    sparseWeight: float = 1.0
-    denseTextWeight: float = 1.0
-    denseCodeWeight: float = 1.0
-    topK: int = 10
-    filter_expr: Optional[str] = ""
-    iterativeFilter: bool = False
+    version_name: str
+
+    sparse_weight: float = 1.0
+    dense_text_weight: float = 1.0
+    dense_code_weight: float = 1.0
+    top_k: int = 10
+
+    filter_expr: Optional[str] = None
+    iterative_filter: bool = False
+
     radius_sparse: float = 0.5
     range_sparse: float = 0.5
     radius_dense_text: float = 0.5
@@ -34,39 +67,36 @@ class HybridSearchRequest(BaseModel):
     radius_dense_code: float = 0.5
     range_dense_code: float = 0.5
 
-class RetrieveRequest(BaseModel):
-    versionName: str
+
+# -----------------------------------------------------------------------------
+# Retriever / generator option structures
+# -----------------------------------------------------------------------------
+
+class RetrieverOptions(_SnakeModel):
     m_text: Optional[int] = None
     ef_text: Optional[int] = None
     m_code: Optional[int] = None
     ef_code: Optional[int] = None
 
-class FileModel(BaseModel):
-    fileName: str = ""
-    fileExtension: str = ""
-    fileContent: str
-    
-class RetrieverOptions(BaseModel):
-    m_text: Optional[int] = None
-    ef_text: Optional[int] = None
-    m_code: Optional[int] = None
-    ef_code: Optional[int] = None
-    sparseWeight: Optional[float] = 1.0
-    denseTextWeight: Optional[float] = 1.0
-    denseCodeWeight: Optional[float] = 1.0
-    topK: Optional[int] = None
+    sparse_weight: float = 1.0
+    dense_text_weight: float = 1.0
+    dense_code_weight: float = 1.0
+    top_k: Optional[int] = None
+
     filter_expr: Optional[str] = None
-    iterativeFilter: Optional[bool] = False
-    radius_sparse: Optional[float] = 0.5
-    range_sparse: Optional[float] = 0.5
-    radius_dense_text: Optional[float] = 0.5
-    range_dense_text: Optional[float] = 0.5
-    radius_dense_code: Optional[float] = 0.5
-    range_dense_code: Optional[float] = 0.5
-    
-class GeneratorOptions(BaseModel):
-    microstat: Optional[int] = None
-    microstat_eta: Optional[float] = None
+    iterative_filter: bool = False
+
+    radius_sparse: float = 0.5
+    range_sparse: float = 0.5
+    radius_dense_text: float = 0.5
+    range_dense_text: float = 0.5
+    radius_dense_code: float = 0.5
+    range_dense_code: float = 0.5
+
+
+class GeneratorOptions(_SnakeModel):
+    mirostat: Optional[int] = Field(None, alias="microstat")
+    mirostat_eta: Optional[float] = None
     mirostat_tau: Optional[float] = None
     num_ctx: Optional[int] = None
     repeat_last_n: Optional[int] = None
@@ -78,44 +108,43 @@ class GeneratorOptions(BaseModel):
     top_k: Optional[int] = None
     top_p: Optional[float] = None
     min_p: Optional[float] = None
-    
-    def get_dict(self) -> dict:
-        return {
-            "microstat": self.microstat,
-            "microstat_eta": self.microstat_eta,
-            "mirostat_tau": self.mirostat_tau,
-            "num_ctx": self.num_ctx,
-            "repeat_last_n": self.repeat_last_n,
-            "repeat_penalty": self.repeat_penalty,
-            "temperature": self.temperature,
-            "seed": self.seed,
-            "stop": self.stop,
-            "num_predict": self.num_predict,
-            "top_k": self.top_k,
-            "top_p": self.top_p,
-            "min_p": self.min_p,
-        }
-    
-class APIOptions(BaseModel):
+
+    def to_dict(self) -> Dict[str, Any]:
+        return self.dict(exclude_none=True, by_alias=True)
+
+
+class APIOptions(_SnakeModel):
     retriever_options: Optional[RetrieverOptions] = None
     generator_options: Optional[GeneratorOptions] = None
 
-class ChatHistory(BaseModel):
+
+# -----------------------------------------------------------------------------
+# Generator / prompt requests
+# -----------------------------------------------------------------------------
+
+class FileModel(_SnakeModel):
+    file_name: str
+    file_extension: str
+    file_content: str
+
+
+class ChatHistory(_SnakeModel):
     query: str
     response: str
 
-class GeneratorRequest(BaseModel):
-    versionName: str
+
+class GeneratorRequest(_SnakeModel):
+    version_name: str
     query: str
     model: str
-    history: Optional[list[ChatHistory]] = None
-    file_list: Optional[list[FileModel]] = None
+    history: Optional[List[ChatHistory]] = None
+    file_list: Optional[List[FileModel]] = None
     additional_options: Optional[APIOptions] = None
-    
-class PromptRequest(BaseModel):
-    versionName: str
+
+
+class PromptRequest(_SnakeModel):
+    version_name: str
     query: str
-    # history: Optional[list[ChatHistory]] = None
-    file_list: Optional[list[FileModel]] = None
+    file_list: Optional[List[FileModel]] = None
     retriever_options: Optional[RetrieverOptions] = None
     generator_options: Optional[GeneratorOptions] = None

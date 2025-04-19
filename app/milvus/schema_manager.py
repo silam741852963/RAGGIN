@@ -1,209 +1,190 @@
-import json, logging
-import pandas as pd
-from pymilvus import (
-    connections, Collection, utility,
-    DataType, FieldSchema, CollectionSchema
-)
-from config import DENSE_VECTOR_DIM
+from __future__ import annotations
+
+import json
+import logging
+from pathlib import Path
+from typing import Any, Dict, List
+
 import numpy as np
+import pandas as pd
+from pymilvus import Collection, CollectionSchema, FieldSchema, connections, utility, DataType
+
+from config import DENSE_VECTOR_DIM, DOWNLOADS_DIR
+
+__all__ = ["MilvusSchemaManager"]
+
+logger = logging.getLogger(__name__)
+
+
+# -----------------------------------------------------------------------------
+# Helper utils
+# -----------------------------------------------------------------------------
+
+def _json_or_empty(val: Any) -> Dict[str, Any]:
+    if isinstance(val, str):
+        try:
+            return json.loads(val)
+        except json.JSONDecodeError:
+            return {}
+    return val if isinstance(val, dict) else {}
+
+
+def _sparse_from_str(val: Any) -> Dict[int, float]:
+    if isinstance(val, str):
+        try:
+            parsed = eval(val)  # noqa: S307 – controlled input: csv we created
+            return {int(idx): float(weight) for idx, weight in parsed}
+        except Exception:  # pragma: no cover
+            return {}
+    return val if isinstance(val, dict) else {}
+
+
+# -----------------------------------------------------------------------------
+# Manager
+# -----------------------------------------------------------------------------
 
 class MilvusSchemaManager:
-    def __init__(self, collection_name, uri):
+    """Create / load a Milvus collection and push CSV rows into it."""
+
+    def __init__(self, collection_name: str, uri: str):
         self.collection_name = collection_name
         self.uri = uri
-        self.collection = None
+        self.collection: Collection | None = None
+        self._ensure_connection()
 
-    def _ensure_connection(self):
-        # Check if the default connection exists; if not, create it.
+    # ------------------------------------------------------------------
+    # Connection helpers
+    # ------------------------------------------------------------------
+
+    def _ensure_connection(self) -> None:
         if not connections.has_connection("default"):
             connections.connect(uri=self.uri)
-            logging.info("Connected to Milvus at %s", self.uri)
+            logger.info("Connected to Milvus @ %s", self.uri)
 
-    def create_field_schemas(self):
-        fields = [
-            FieldSchema(
-                name="entry_id",
-                dtype=DataType.VARCHAR,
-                is_primary=True,
-                auto_id=False,
-                max_length=255,
-                description="Unique identifier for the entry."
-            ),
-            FieldSchema(
-                name="title",
-                dtype=DataType.VARCHAR,
-                max_length=255,
-                description="Title of the entry."
-            ),
-            FieldSchema(
-                name="metadata",
-                dtype=DataType.JSON,
-                description="Custom metadata for the entry."
-            ),
-            FieldSchema(
-                name="version",
-                dtype=DataType.VARCHAR,
-                max_length=20,
-                description="Framework version associated with the entry.",
-                is_partition_key=True,
-            ),
-            FieldSchema(
-                name="text_content",
-                dtype=DataType.VARCHAR,
-                max_length=65535,
-                description="Raw text content of the entry."
-            ),
-            FieldSchema(
-                name="code_content",
-                dtype=DataType.VARCHAR,
-                max_length=65535,
-                description="Code snippet content of the entry."
-            ),
-            FieldSchema(
-                name="sparse_title",
-                dtype=DataType.SPARSE_FLOAT_VECTOR,
-                description="Sparse vector embedding for the title."
-            ),
-            FieldSchema(
-                name="dense_text_content",
-                dtype=DataType.FLOAT_VECTOR,
-                dim=DENSE_VECTOR_DIM,
-                description="Dense vector embedding for the text content."
-            ),
-            FieldSchema(
-                name="dense_code_snippet",
-                dtype=DataType.FLOAT_VECTOR,
-                dim=DENSE_VECTOR_DIM,
-                description="Dense vector embedding for the code content aggregated by average pooling."
-            ),
-            FieldSchema(
-                name="tag",
-                dtype=DataType.VARCHAR,
-                max_length=255,
-                description="Tag for the entry."
-            ),
+    # ------------------------------------------------------------------
+    # Collection + schema
+    # ------------------------------------------------------------------
+
+    def _field_schemas(self) -> List[FieldSchema]:
+        return [
+            FieldSchema("entry_id", DataType.VARCHAR, max_length=255, is_primary=True),
+            FieldSchema("title", DataType.VARCHAR, max_length=255),
+            FieldSchema("metadata", DataType.JSON),
+            FieldSchema("version", DataType.VARCHAR, max_length=20, is_partition_key=True),
+            FieldSchema("text_content", DataType.VARCHAR, max_length=65535),
+            FieldSchema("code_content", DataType.VARCHAR, max_length=65535),
+            FieldSchema("sparse_title", DataType.SPARSE_FLOAT_VECTOR),
+            FieldSchema("dense_text_content", DataType.FLOAT_VECTOR, dim=DENSE_VECTOR_DIM),
+            FieldSchema("dense_code_snippet", DataType.FLOAT_VECTOR, dim=DENSE_VECTOR_DIM),
+            FieldSchema("tag", DataType.VARCHAR, max_length=255),
         ]
-        return fields
 
-    def create_collection(self):
+    def create_collection(self) -> Collection:
         self._ensure_connection()
-        schema = CollectionSchema(
-            fields=self.create_field_schemas(),
-            description="Schema for documentation entries, sections, and aggregated code snippet embeddings.",
-            auto_id=False,
-        )
         if utility.has_collection(self.collection_name):
-            coll = Collection(self.collection_name)
-            coll.drop()
-            logging.info("Collection '%s' dropped.", self.collection_name)
+            Collection(self.collection_name).drop()
+            logger.info("Dropped existing collection '%s'", self.collection_name)
+
+        schema = CollectionSchema(self._field_schemas(), auto_id=False)
         self.collection = Collection(
             name=self.collection_name,
             schema=schema,
             consistency_level="Strong",
-            properties={"partitionkey.isolation": True}
+            properties={"partitionkey.isolation": True},
         )
-        logging.info("Collection '%s' created successfully.", self.collection_name)
+        logger.info("Created collection '%s'", self.collection_name)
         return self.collection
 
-    def create_indices(self, m_text: int = 16, ef_text: int = 200, m_code: int = 16, ef_code: int = 200):
-        sparse_index = {"index_type": "SPARSE_INVERTED_INDEX", "metric_type": "IP"}
-        self.collection.create_index("sparse_title", sparse_index)
-        
-        dense_text_index = {
-            "index_type": "HNSW",
-            "metric_type": "COSINE",
-            "params": {"M": m_text, "efConstruction": ef_text},
-        }
-        self.collection.create_index("dense_text_content", dense_text_index)
-        
-        dense_code_index = {
-            "index_type": "HNSW",
-            "metric_type": "COSINE",
-            "params": {"M": m_code, "efConstruction": ef_code},
-        }
-        self.collection.create_index("dense_code_snippet", dense_code_index)
-        
+    # ------------------------------------------------------------------
+    # Indices
+    # ------------------------------------------------------------------
+
+    def create_indices(
+        self,
+        *,
+        m_text: int = 16,
+        ef_text: int = 200,
+        m_code: int = 16,
+        ef_code: int = 200,
+    ) -> None:
+        """Add SPARSE & HNSW indices and load collection."""
+        assert self.collection, "create_collection() first"
+
+        self.collection.create_index("sparse_title", {"index_type": "SPARSE_INVERTED_INDEX", "metric_type": "IP"})
+        self.collection.create_index(
+            "dense_text_content",
+            {
+                "index_type": "HNSW",
+                "metric_type": "COSINE",
+                "params": {"M": m_text, "efConstruction": ef_text},
+            },
+        )
+        self.collection.create_index(
+            "dense_code_snippet",
+            {
+                "index_type": "HNSW",
+                "metric_type": "COSINE",
+                "params": {"M": m_code, "efConstruction": ef_code},
+            },
+        )
         self.collection.load()
-        logging.info(
-            "Collection loaded with text index (M=%d, efConstruction=%d) and code index (M=%d, efConstruction=%d).",
-            m_text, ef_text, m_code, ef_code,
-        )
+        logger.info("Collection loaded with indices (text M=%d/ef=%d, code M=%d/ef=%d)", m_text, ef_text, m_code, ef_code)
 
-    def safe_parse(self, value):
-        if isinstance(value, str):
-            try:
-                return json.loads(value)
-            except json.JSONDecodeError:
-                return {}
-        return value
+    # ------------------------------------------------------------------
+    # CSV ingest
+    # ------------------------------------------------------------------
 
-    def parse_sparse_vector(self, value):
-        if isinstance(value, str):
-            try:
-                sparse_data = eval(value)
-                return {int(item[0]): float(item[1]) for item in sparse_data}
-            except (SyntaxError, ValueError, TypeError):
-                return {}   
-        return value
-
-    def enforce_types(self, row):
-        entry_id = str(row["entry_id"])
-        title = str(row["title"])
-        metadata = self.safe_parse(row["metadata"]) if pd.notna(row["metadata"]) else {}
-        version = str(row["version"]) if pd.notna(row["version"]) else ""
-        text_content = str(row["text_content"])[:65535] if pd.notna(row["text_content"]) else ""
-        code_content = str(row["code_content"]) if pd.notna(row["code_content"]) else ""
-        sparse_title = self.parse_sparse_vector(row["sparse_title"])
-        dense_text_content = (
-            json.loads(row["dense_text_content"])
-            if pd.notna(row["dense_text_content"]) and isinstance(row["dense_text_content"], str)
-            else [0.0] * DENSE_VECTOR_DIM
-        )
-        dense_code_snippet = (
-            json.loads(row["dense_code_snippet"])
-            if pd.notna(row["dense_code_snippet"]) and isinstance(row["dense_code_snippet"], str)
-            else [0.0] * DENSE_VECTOR_DIM
-        )
-        tag = str(row["tag"]) if pd.notna(row["tag"]) else ""
-
+    def _row_to_entity(self, row: pd.Series) -> Dict[str, Any]:
         return {
-            "entry_id": entry_id,
-            "title": title,
-            "metadata": metadata,
-            "version": version,
-            "text_content": text_content,
-            "code_content": code_content,
-            "sparse_title": sparse_title,
-            "dense_text_content": dense_text_content,
-            "dense_code_snippet": dense_code_snippet,
-            "tag": tag,
+            "entry_id": str(row["entry_id"]),
+            "title": str(row["title"]),
+            "metadata": _json_or_empty(row.get("metadata")),
+            "version": str(row.get("version", "")),
+            "text_content": str(row.get("text_content", ""))[:65535],
+            "code_content": str(row.get("code_content", ""))[:65535],
+            "sparse_title": _sparse_from_str(row.get("sparse_title")),
+            "dense_text_content": json.loads(row["dense_text_content"]) if isinstance(row.get("dense_text_content"), str) else [0.0] * DENSE_VECTOR_DIM,
+            "dense_code_snippet": json.loads(row["dense_code_snippet"]) if isinstance(row.get("dense_code_snippet"), str) else [0.0] * DENSE_VECTOR_DIM,
+            "tag": str(row.get("tag", "")),
         }
 
-    def insert_data(self, file_path):
-        """Reads the entire CSV file and inserts all rows into Milvus at once."""
-        self._ensure_connection()
-        data = pd.read_csv(file_path)
-        entities = [self.enforce_types(row) for _, row in data.iterrows()]
+    def insert_csv(self, csv_path: str | Path) -> int:
+        """Insert every row from *csv_path*; returns count inserted."""
+        assert self.collection, "create_collection() first"
+        df = pd.read_csv(csv_path)
+        entities = [self._row_to_entity(row) for _, row in df.iterrows()]
         self.collection.insert(entities)
-        logging.info("Inserted %d records from file %s.", len(entities), file_path)
+        logger.info("Inserted %d rows from %s", len(entities), csv_path)
+        return len(entities)
 
-    def run(self, csv_file_path, m_text: int = 16, ef_text: int = 200, m_code: int = 16, ef_code: int = 200):
-        self._ensure_connection()
+    # ------------------------------------------------------------------
+    # Full pipeline helper
+    # ------------------------------------------------------------------
+
+    def build_from_csv(
+        self,
+        csv_path: str | Path,
+        *,
+        m_text: int = 16,
+        ef_text: int = 200,
+        m_code: int = 16,
+        ef_code: int = 200,
+    ) -> None:
         self.create_collection()
-        self.create_indices(m_text, ef_text, m_code, ef_code)
-        self.insert_data(csv_file_path)
+        self.create_indices(m_text=m_text, ef_text=ef_text, m_code=m_code, ef_code=ef_code)
+        self.insert_csv(csv_path)
         self.collection.release()
-        logging.info("Collection '%s' is ready.", self.collection_name)
-        
+        logger.info("Collection '%s' ready", self.collection_name)
+
+    # ------------------------------------------------------------------
+    # Delete helpers
+    # ------------------------------------------------------------------
+
     def delete_version(self, version: str):
-        """
-        Deletes all documents in the collection that match the provided version using a delete expression.
-        """
+        """Remove every row whose *version* field matches."""
         self._ensure_connection()
-        # Re-instantiate and load the collection.
         self.collection = Collection(self.collection_name)
         self.collection.load()
         expr = f"version == '{version}'"
         result = self.collection.delete(expr)
-        logging.info("Deleted documents for version %s using expression '%s': %s", version, expr, result)
-        return result
+        logger.info("Deleted rows for version %s → %s", version, result)

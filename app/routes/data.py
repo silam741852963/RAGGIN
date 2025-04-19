@@ -1,82 +1,81 @@
+from __future__ import annotations
+
 import os
+from pathlib import Path
+from typing import List, Dict
+
 from fastapi import APIRouter, HTTPException
+
 from app.classes.schemas import VersionsResponseItem
 from config import DOWNLOADS_DIR, SUPPORTED_VERSIONS_FILE
 
-router = APIRouter()
+router = APIRouter(prefix="/data", tags=["data"])
 
-def load_supported_versions():
+# -----------------------------------------------------------------------------
+# Helpers
+# -----------------------------------------------------------------------------
+
+def load_supported_versions() -> List[str]:
+    """Read the list of supported Next.js versions from the configured file."""
     try:
-        with open(SUPPORTED_VERSIONS_FILE, "r") as f:
-            # Read each line, strip whitespace, and ignore empty lines.
-            supported_versions = [line.strip() for line in f if line.strip()]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error reading versions file: {e}")
-    return supported_versions
+        with open(SUPPORTED_VERSIONS_FILE, "r", encoding="utf-8") as fh:
+            return [ln.strip() for ln in fh if ln.strip()]
+    except Exception as exc:  # pragma: no cover – bubbled as HTTP error
+        raise HTTPException(status_code=500, detail=f"Error reading versions file: {exc}") from exc
 
-@router.get("/data/versions", response_model=list[VersionsResponseItem])
-def list_versions():
-    """
-    Returns a list of supported version objects.
-    The supported versions are read from a file.
-    The 'downloaded' flag is determined by checking the downloads directory.
-    """
-    supported_versions = load_supported_versions()
-    downloads_dir = os.path.abspath(DOWNLOADS_DIR)
-    versions = []
-    for ver in supported_versions:
-        file_path = os.path.join(downloads_dir, f"{ver}.csv")
-        versions.append({
-            "versionName": ver,
-            "downloaded": os.path.exists(file_path)
-        })
-    return versions
 
-@router.get("/data/versions/{version}", response_model=dict)
+def _csv_path(version: str) -> Path:
+    """Return the absolute path to <downloads_dir>/<version>.csv"""
+    return Path(DOWNLOADS_DIR).resolve() / f"{version}.csv"
+
+
+# -----------------------------------------------------------------------------
+# Routes
+# -----------------------------------------------------------------------------
+
+@router.get("/versions", response_model=List[VersionsResponseItem])
+def list_versions() -> List[VersionsResponseItem]:
+    """Return all supported versions and a *downloaded* flag for each."""
+    supported = load_supported_versions()
+    return [
+        VersionsResponseItem(
+            version_name=ver,
+            downloaded=_csv_path(ver).exists(),
+        )
+        for ver in supported
+    ]
+
+
+@router.get("/versions/{version}", response_model=Dict[str, str | bool | int | float])
 def get_version_detail(version: str):
-    """
-    Returns detailed information for a specific version.
-    Checks if the version is supported and, if its CSV file is downloaded,
-    provides file size and last modified timestamp.
-    """
-    supported_versions = load_supported_versions()
-    if version not in supported_versions:
-        raise HTTPException(status_code=404, detail=f"Version {version} is not supported.")
-    downloads_dir = os.path.abspath(DOWNLOADS_DIR)
-    file_path = os.path.join(downloads_dir, f"{version}.csv")
-    detail = {
-        "versionName": version,
-        "downloaded": os.path.exists(file_path)
+    """Return metadata (size, mtime) for one version, 404 if unsupported."""
+    if version not in load_supported_versions():
+        raise HTTPException(status_code=404, detail=f"Version '{version}' is not supported")
+
+    path = _csv_path(version)
+    detail: Dict[str, str | bool | int | float] = {
+        "version_name": version,
+        "downloaded": path.exists(),
     }
-    if os.path.exists(file_path):
-        stat_info = os.stat(file_path)
-        detail.update({
-            "file_size": stat_info.st_size,
-            "last_modified": stat_info.st_mtime  # UNIX timestamp; convert if needed
-        })
+    if path.exists():
+        stat = path.stat()
+        detail.update(file_size=stat.st_size, last_modified=stat.st_mtime)
     return detail
 
-@router.get("/data/downloaded", response_model=list[str])
-def list_downloaded_versions():
-    """
-    Returns a list of versions that have been downloaded.
-    """
-    supported_versions = load_supported_versions()
-    downloads_dir = os.path.abspath(DOWNLOADS_DIR)
-    downloaded = [ver for ver in supported_versions if os.path.exists(os.path.join(downloads_dir, f"{ver}.csv"))]
-    return downloaded
 
-@router.get("/data/stats", response_model=dict)
+@router.get("/downloaded", response_model=List[str])
+def list_downloaded_versions() -> List[str]:
+    """Return only versions whose CSV file exists in the downloads directory."""
+    return [ver for ver in load_supported_versions() if _csv_path(ver).exists()]
+
+
+@router.get("/stats", response_model=Dict[str, int | List[str]])
 def version_stats():
-    """
-    Returns statistics about the supported and downloaded versions.
-    """
-    supported_versions = load_supported_versions()
-    downloads_dir = os.path.abspath(DOWNLOADS_DIR)
-    downloaded = [ver for ver in supported_versions if os.path.exists(os.path.join(downloads_dir, f"{ver}.csv"))]
-    stats = {
-        "total_supported": len(supported_versions),
+    """Return simple counts & list of downloaded versions."""
+    supported = load_supported_versions()
+    downloaded = [ver for ver in supported if _csv_path(ver).exists()]
+    return {
+        "total_supported": len(supported),
         "total_downloaded": len(downloaded),
-        "downloaded_versions": downloaded
+        "downloaded_versions": downloaded,
     }
-    return stats

@@ -103,13 +103,15 @@ class GeneratorOptions(_SnakeModel):
     repeat_penalty: Optional[float] = None
     temperature: Optional[float] = None
     seed: Optional[int] = None
-    stop: Optional[str] = None
+    stop: str | list[str] | None = None
     num_predict: Optional[int] = None
     top_k: Optional[int] = None
     top_p: Optional[float] = None
     min_p: Optional[float] = None
 
     def to_dict(self) -> Dict[str, Any]:
+        if (type(self.stop) is str):
+            self.stop = list(self.stop)
         return self.dict(exclude_none=True, by_alias=True)
 
 

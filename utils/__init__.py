@@ -94,6 +94,26 @@ def history_string(history: List[ChatHistory]) -> str:
 # LLM generation helper
 # -----------------------------------------------------------------------------
 
+def _get_reference(context: List[dict]):
+    """
+    Extract related links from a list of context items.
+    """
+    base_url = "https://nextjs.org/docs/"
+    res = []
+    for c in context:
+        # if c["title"]:
+        #     res.append(c["title"])
+        try:
+            if c['related']:
+                links = c['related']['link']
+                if isinstance(links, list):
+                    res.extend(c['related']['link'])
+                else:
+                    res.append(c['related']['link'])
+        except Exception:
+            pass
+    return [f"{base_url}{link}" for link in res]
+
 def generate(
     model: str,
     prompt: str,
@@ -123,5 +143,5 @@ Question:\n{prompt}
     resp = requests.post(OLLAMA_API, json=payload, timeout=60)
     resp.raise_for_status()
     data = resp.json()
-    data["retrieved_data"] = [c["title"] for c in context]
+    data["retrieved_data"] = _get_reference(context=context['related'])
     return data

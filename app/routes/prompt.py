@@ -132,3 +132,8 @@ def generate_response(req: GeneratorRequest):
     except Exception as exc:  # pragma: no cover
         logger.exception("generate_response failed")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+@router.post("/test")
+def test_generate(req: GeneratorRequest):
+    print((req.model_dump_json()))
+    return req

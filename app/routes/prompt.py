@@ -56,6 +56,10 @@ def _build_prompt_and_context(req: PromptRequest) -> dict[str, object]:
     text_parts = split_text_and_code(req.query)
     text_query = " ".join(text_parts["text"])
     code_query = " ".join(text_parts["code"])
+    
+    if req.file_list:
+        for f in req.file_list:
+            code_query += f"\n```{f.file_extension}\n{f.file_content}```"
 
     ropts = req.retriever_options or RetrieverOptions()
     search_req = SearchRequest(

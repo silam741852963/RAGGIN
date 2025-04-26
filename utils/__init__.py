@@ -112,7 +112,11 @@ def _get_reference(context: List[dict]):
                     res.append(c['related']['link'])
         except Exception:
             pass
-    return [f"{base_url}{link}" for link in res] # + [c['title'] for c in context]
+    # return [f"{base_url}{link}" for link in res] # + [c['title'] for c in context]\
+    return {
+        "links": [f"{base_url}{link}" for link in res],
+        "docs": [c['title'] for c in context]
+    }
 
 def generate(
     model: str,
@@ -140,7 +144,7 @@ Question:\n{prompt}
     if options:
         payload["options"] = options
 
-    resp = requests.post(OLLAMA_API, json=payload, timeout=60)
+    resp = requests.post(OLLAMA_API, json=payload, timeout=600)
     resp.raise_for_status()
     data = resp.json()
     data["retrieved_data"] = _get_reference(context=context)

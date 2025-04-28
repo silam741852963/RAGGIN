@@ -47,6 +47,7 @@ def _inline_files(text: str, files: List[FileModel] | None) -> str:
         text += f"\n```{f.file_extension} {f.file_name}\n{f.file_content}```"
     return text
 
+import time
 
 def _build_prompt_and_context(req: PromptRequest) -> dict[str, object]:
     """Core business logic used by both endpoints (no HTTP types)."""
@@ -78,7 +79,10 @@ def _build_prompt_and_context(req: PromptRequest) -> dict[str, object]:
         radius_dense_code=ropts.radius_dense_code,
         range_dense_code=ropts.range_dense_code,
     )
+    start_search = time.time()
     retrieved = search(search_req)
+    end_search = time.time()
+    print(f"search time: {end_search - start_search}")
     prompt = _inline_files(req.query, req.file_list)
     return {"prompt": prompt, "context": retrieved["results"]}
 

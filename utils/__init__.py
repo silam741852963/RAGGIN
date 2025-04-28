@@ -117,6 +117,8 @@ def _get_reference(context: List[dict]):
         "links": [f"{base_url}{link}" for link in res],
         "docs": [c['title'] for c in context]
     }
+    
+import time
 
 def generate(
     model: str,
@@ -143,8 +145,10 @@ Question:\n{prompt}
     }
     if options:
         payload["options"] = options
-
+    start_generate = time.time()
     resp = requests.post(OLLAMA_API, json=payload, timeout=600)
+    end_generate = time.time()
+    print(f"Generate time: {end_generate - start_generate}")
     resp.raise_for_status()
     data = resp.json()
     data["retrieved_data"] = _get_reference(context=context)

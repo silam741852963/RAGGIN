@@ -95,11 +95,6 @@ services:
     volumes:
       - ${HOST_DOWNLOADS_DIR}:/downloads
       - ${HOST_MODEL_DIR}:/models/bge-m3
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - capabilities: [gpu]
     networks: [milvus_net]
 
 # ---------------------------------------------------------------- network ---

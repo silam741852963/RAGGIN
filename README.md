@@ -52,10 +52,9 @@ cd RAGGIN
 docker compose -f docker-compose.yml up
 ```
 
-### 3. (Optional) Install the VSCode Extension
+### 3. Install the VSCode Extension
 
-> Coming soon to the [VS Code Marketplace](https://marketplace.visualstudio.com/)  
-The extension enables direct queries and code suggestions inside VSCode.
+[RAGGIN](https://marketplace.visualstudio.com/items/?itemName=raggin.raggin)
 
 ---
 

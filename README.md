@@ -73,24 +73,12 @@ This project uses a curated dataset of **Next.js documentation (v13.0.0–15.x.x
 
 ---
 
-## 📊 Evaluation Plan
-
-| Metric              | Description                          |
-|---------------------|--------------------------------------|
-| Recall@K            | Percent of relevant docs in Top-K    |
-| Precision@K         | Relevance ratio among Top-K results  |
-| ROUGE               | Overlap between generated and reference |
-| Latency             | Time to retrieve/generate response   |
-| Relevance/Factuality| Human-assessed output quality        |
-
----
-
 ## 📍 Project Links
 
 - 🔗 GitHub: [github.com/silam741852963/RAGGIN](https://github.com/silam741852963/RAGGIN)
 - 🐳 Docker Hub: [melukootto/raggin](https://hub.docker.com/r/melukootto/raggin)
 - 📦 Kaggle Dataset: [Next.js Docs for RAGGIN](https://www.kaggle.com/datasets/jiyujizai/nextjs-documentation-for-raggin)
-- 💻 VS Code Extension: Coming soon
+- 💻 VS Code Extension: [RAGGIN](https://marketplace.visualstudio.com/items/?itemName=raggin.raggin)
 
 ---
 

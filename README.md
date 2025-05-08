@@ -13,8 +13,21 @@
 **RAGGIN** is an open-source system that enhances the web development experience inside **Visual Studio Code**. Using **Retrieval-Augmented Generation (RAG)** and **local Large Language Models (LLMs)**, it helps developers query documentation, understand version changes, and get real-time suggestions — all while staying offline.
 
 ![411_KHMT_2153289-2152715-2152239](https://github.com/user-attachments/assets/81fbc98a-9148-4daa-a629-05808facc561)
+Here is the completed version with the missing sections filled in:
 
-### Key Features
+---
+
+## 🎯 Technical Fair Poster
+
+![411\_KHMT\_2153289-2152715-2152239](https://github.com/user-attachments/assets/81fbc98a-9148-4daa-a629-05808facc561)
+
+---
+
+## 📜 Technical Report
+
+You can access the full **Technical Report** of the RAGGIN project [here](https://github.com/silam741852963/RAGGIN/blob/main/report.pdf).
+
+## Key Features
 
 - 🔍 Semantic search across versioned Next.js documentation  
 - ✍️ Intelligent, context-aware code generation and explanation  

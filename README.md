@@ -49,10 +49,6 @@ You can access the full **Technical Report** of the RAGGIN project [here](https:
 
 ---
 
-Here’s the updated **Getting Started** section with the new installation guide integrated and the option for both Docker pull and local build preserved:
-
----
-
 ## 🚀 Getting Started
 
 To make **RAGGIN** fully operational, ensure that the following components are installed and configured properly:

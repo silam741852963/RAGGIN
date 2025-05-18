@@ -1,0 +1,9 @@
+Question;Expected
+How to use Route Group?;v15_3_1_08-route-groups_convention,v15_3_1_11-parallel-routes_examples,v15_3_1_invalid-href-passed_useful links,v15_3_1_invalid-relative-url-external-as_useful links,v15_3_1_react-hydration-error_possible ways to fix it
+How to generate static params in Dynamic Routes?;v15_3_1_10-dynamic-routes_example,v15_3_1_10-dynamic-routes_generating static params,v15_3_1_react-hydration-error_possible ways to fix it,v15_3_1_16-progressive-web-apps_creating a pwa with next_js,v15_3_1_index_apis
+How to use Parallel Routes?;v15_3_1_react-hydration-error_possible ways to fix it,v15_3_1_16-progressive-web-apps_creating a pwa with next_js,v15_3_1_index_apis
+"What is the naming convention for Intercepting Routes, show me some examples.";v15_3_1_12-intercepting-routes_convention,v15_3_1_next-prerender-sync-request_useful links,v15_3_1_invalid-i18n-config_useful links,v15_3_1_react-hydration-error_possible ways to fix it
+What is Middleware and when does it run?;v15_3_1_react-hydration-error_possible ways to fix it,v15_3_1_16-progressive-web-apps_creating a pwa with next_js,v15_3_1_07-amp_amp validation,v15_3_1_index_apis,v15_3_1_image_advanced props
+How do I create and structure a Middleware file?;v15_3_1_react-hydration-error_possible ways to fix it,v15_3_1_16-progressive-web-apps_creating a pwa with next_js,v15_3_1_07-amp_amp validation,v15_3_1_index_apis,v15_3_1_image_advanced props
+Can I have multiple Middleware files in different routes or folders?;v15_3_1_react-hydration-error_possible ways to fix it,v15_3_1_16-progressive-web-apps_creating a pwa with next_js,v15_3_1_07-amp_amp validation,v15_3_1_index_apis,v15_3_1_image_advanced props
+What are some use cases where Middleware is recommended?;v15_3_1_react-hydration-error_possible ways to fix it,v15_3_1_16-progressive-web-apps_creating a pwa with next_js,v15_3_1_07-amp_amp validation,v15_3_1_index_apis,v15_3_1_image_advanced props

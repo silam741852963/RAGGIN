@@ -1,0 +1,100 @@
+Question,Expected
+"How can I implement a dynamic post editing feature in a Next.js application using the App Router?
+
+The post editing form is a Client Component utilizing useState for local state management.?
+
+The form submits data to a Server Action defined with the ""use server"" directive.?
+
+Upon successful submission, the application revalidates the cache for the updated post and redirects the user to the post's detail page.?
+
+The application provides feedback to the user during the submission process, such as loading indicators and error messages.?
+
+Additionally, how can I ensure that sensitive operations, like updating the post in the database, are securely handled on the server side, and that the client does not have direct access to sensitive information??
+
+Please provide code snippets in TypeScript that demonstrate this functionality.","v15_3_1_react-hydration-error_possible ways to fix it,v15_3_1_07-amp_amp validation,v15_3_1_10-dynamic-routes_convention,v15_3_1_10-dynamic-routes_example,v15_3_1_10-dynamic-routes_typescript"
+"How can I implement a responsive image gallery in a Next.js application using the App Router?
+
+Images are stored in the public directory and served as static assets.?
+
+The gallery utilizes the next/image component to optimize images for different device sizes and resolutions.?
+
+The application ensures that images are lazy-loaded and do not cause layout shifts during loading.?
+
+The gallery supports both local images from the public directory and remote images from a trusted external source, with appropriate configuration in next.config.js.?
+
+The application provides a fallback mechanism for images that fail to load.?
+
+Additionally, how can I configure caching headers for the static assets served from the public directory to improve performance, considering that Next.js applies a default Cache-Control: public, max-age=0 header?","v15_3_1_react-hydration-error_possible ways to fix it,v15_3_1_07-amp_amp validation,v15_3_1_04-images-and-fonts_optimizing images,v15_3_1_01-images_image sizing,v15_3_1_image_responsive images"
+"You're building a dashboard-style internal tool using the Next.js App Router, where performance is critical. You want to:
+
+Lazy load heavy Client Components (e.g., charts or data visualizations) that aren�t immediately needed on first render.
+
+Ensure type-safety using TypeScript for components and props.
+
+Use dynamic imports with suspense: true and provide a custom loading fallback UI.
+
+Only load third-party libraries like react-chartjs-2 on the client side to reduce bundle size.
+
+How would you set this up properly across your layout, pages, and components? Include code snippets for the following:
+1. components/Chart.tsx (Client Component with chart)
+```
+'use client'
+
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import { Doughnut } from 'react-chartjs-2';
+
+ChartJS.register(ArcElement, Tooltip, Legend);
+
+type ChartProps = {
+  title: string;
+  data: number[];
+};
+
+export default function Chart({ title, data }: ChartProps) {
+  return (
+    <div className=""p-4"">
+      <h2>{title}</h2>
+      <Doughnut
+        data={{
+          labels: ['A', 'B', 'C'],
+          datasets: [{
+            label: title,
+            data,
+            backgroundColor: ['#F00', '#0F0', '#00F'],
+          }]
+        }}
+      />
+    </div>
+  );
+}
+```
+
+components/ChartLazy.tsx
+```
+import dynamic from 'next/dynamic';
+
+const Chart = dynamic(() => import('./Chart'), {
+  ssr: false,
+  loading: () => <p>Loading chart...</p>,
+  suspense: true,
+});
+
+export default Chart;
+```
+
+app/dashboard/page.tsx
+```
+import { Suspense } from 'react';
+import Chart from '@/components/ChartLazy';
+
+export default function DashboardPage() {
+  return (
+    <main className=""space-y-8"">
+      <h1>Dashboard</h1>
+      <Suspense fallback={<div>Loading Charts...</div>}>
+        <Chart title=""User Stats"" data={[10, 20, 30]} />
+      </Suspense>
+    </main>
+  );
+}
+```","v15_3_1_react-hydration-error_possible ways to fix it,v15_3_1_07-amp_amp validation,v15_3_1_07-lazy-loading_next/dynamic,v15_3_1_07-lazy-loading_examples"

@@ -82,9 +82,9 @@ def _build_prompt_and_context(req: PromptRequest) -> dict[str, object]:
     start_search = time.time()
     retrieved = search(search_req)
     end_search = time.time()
-    print(f"search time: {end_search - start_search}")
+    print(f"Search time: {end_search - start_search}")
     prompt = _inline_files(req.query, req.file_list)
-    return {"prompt": prompt, "context": retrieved["results"]}
+    return {"prompt": prompt, "context": retrieved["results"], "search_time": end_search - start_search}
 
 
 # -----------------------------------------------------------------------------
@@ -133,6 +133,7 @@ def generate_response(req: GeneratorRequest):
             context=prompt_ctx["context"],
             history=req.history or [],
             options=generator_opts.to_dict(),
+            retrieved_time=prompt_ctx["search_time"],
         )
 
     except HTTPException:

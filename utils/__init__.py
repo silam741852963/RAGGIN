@@ -126,6 +126,7 @@ def generate(
     context: List[dict],
     history: List[ChatHistory],
     options: dict | None = None,
+    retrieved_time: float | None = None,
 ):
     """Query the Ollama API and return its JSON response augmented with titles."""
     context_str = history_string(history) + get_retrieved_data(context)
@@ -152,4 +153,8 @@ Question:\n{prompt}
     resp.raise_for_status()
     data = resp.json()
     data["retrieved_data"] = _get_reference(context=context)
+    data["latency"] = {
+        "retrieve_time": retrieved_time,
+        "generate_time": end_generate - start_generate
+    }
     return data

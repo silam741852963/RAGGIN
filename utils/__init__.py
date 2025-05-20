@@ -29,14 +29,14 @@ __all__ = [
 # Distance helpers
 # -----------------------------------------------------------------------------
 
-def normalize_similarity(sim: float) -> float:
-    """Map raw similarity to [0,1]:
+def normalize_distance(dis: float) -> float:
+    """Map raw distance to [0,1]:
     -∞ → 0   (very dissimilar)
      0 → 0   (neutral)
     +∞ → 1   (perfectly similar)
     """
-    # arctan(sim) / (pi/2) smoothly maps the whole real line → (-1,1), then clamp
-    val = math.atan(sim) / (math.pi/2)
+    # arctan(dis) / (pi/2) smoothly maps the whole real line → (-1,1), then clamp
+    val = math.atan(dis) / (math.pi/2)
     return max(0.0, min(val, 1.0))
 
 

@@ -68,7 +68,7 @@ class SearchManager:
         expr: str,
         metric: str,
         radius: float = 0.5,
-        range_filter: float = 0.5,
+        range_filter: float = 1,
         extra_params: Dict[str, Any] | None = None,
     ):
         self._ensure_conn()
@@ -136,11 +136,11 @@ class SearchManager:
         filter_expr: str | None = None,
         # distance params
         radius_sparse: float = 0.5,
-        range_sparse: float = 0.5,
+        range_sparse: float = 1,
         radius_dense_text: float = 0.5,
-        range_dense_text: float = 0.5,
+        range_dense_text: float = 1,
         radius_dense_code: float = 0.5,
-        range_dense_code: float = 0.5,
+        range_dense_code: float = 1,
     ) -> List[Dict[str, Any]]:
         if not any([sparse_weight, dense_text_weight, dense_code_weight]):
             raise ValueError("All modality weights are zero – nothing to search.")

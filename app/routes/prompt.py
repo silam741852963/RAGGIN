@@ -126,15 +126,15 @@ def generate_response(req: GeneratorRequest):
                 generator_options=generator_opts,
             )
         )
-
-        return generate(
-            model=req.model,
-            prompt=prompt_ctx["prompt"],
-            context=prompt_ctx["context"],
-            history=req.history or [],
-            options=generator_opts.to_dict(),
-            retrieved_time=prompt_ctx["search_time"],
-        )
+        return prompt_ctx
+        # return generate(
+        #     model=req.model,
+        #     prompt=prompt_ctx["prompt"],
+        #     context=prompt_ctx["context"],
+        #     history=req.history or [],
+        #     options=generator_opts.to_dict(),
+        #     retrieved_time=prompt_ctx["search_time"],
+        # )
 
     except HTTPException:
         raise
